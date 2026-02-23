@@ -1,628 +1,724 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BCN Explorer — Sarthak's Map</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
-<style>
-  :root {
-    --bg: #0e0d0c;
-    --card: #1a1815;
-    --border: #2e2b27;
-    --accent: #e8622a;
-    --gold: #c9a84c;
-    --text: #f0ebe4;
-    --muted: #8a8278;
-    --cat-sight: #e8622a;
-    --cat-food: #4CAF50;
-    --cat-cafe: #c9a84c;
-    --cat-bar: #9b59b6;
-    --cat-you: #00bcd4;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BCN Explorer — Sarthak's Map</title>
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet"
+  />
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  /* Header */
-  #header {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 20px;
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    z-index: 1000;
-    gap: 12px;
-  }
-  #header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.3rem;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
-  #header h1 span { color: var(--accent); }
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 
-  /* Filters */
-  #filters {
-    display: flex;
-    gap: 6px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  #filters::-webkit-scrollbar { display: none; }
-
-  .filter-btn {
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 1.5px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-  }
-  .filter-btn.active { color: var(--text); border-color: currentColor; }
-  .filter-btn[data-cat="all"].active   { border-color: var(--text);       color: var(--text); }
-  .filter-btn[data-cat="sight"].active { border-color: var(--cat-sight);  color: var(--cat-sight); }
-  .filter-btn[data-cat="food"].active  { border-color: var(--cat-food);   color: var(--cat-food); }
-  .filter-btn[data-cat="cafe"].active  { border-color: var(--cat-cafe);   color: var(--cat-cafe); }
-  .filter-btn[data-cat="bar"].active   { border-color: var(--cat-bar);    color: var(--cat-bar); }
-
-  /* Locate btn */
-  #locate-btn {
-    padding: 7px 14px;
-    border-radius: 20px;
-    border: 1.5px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-  #locate-btn:hover { background: var(--accent); color: white; }
-  #locate-btn.locating { animation: pulsebtn 1s infinite; }
-  @keyframes pulsebtn { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-  /* Map wrapper */
-  #map-wrap { flex: 1; position: relative; overflow: hidden; }
-  #map { width: 100%; height: 100%; }
-
-  /* Route info pill */
-  #route-info {
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--card);
-    border: 1.5px solid var(--accent);
-    border-radius: 24px;
-    padding: 8px 18px;
-    font-size: 0.76rem;
-    color: var(--text);
-    z-index: 900;
-    display: none;
-    align-items: center;
-    gap: 10px;
-    white-space: nowrap;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.55);
-    max-width: calc(100vw - 120px);
-  }
-  #route-info.visible { display: flex; }
-  #route-info strong { color: var(--accent); }
-  #route-info-text { overflow: hidden; text-overflow: ellipsis; }
-  #route-cancel {
-    background: none; border: none; color: var(--muted);
-    cursor: pointer; font-size: 1rem; line-height: 1;
-    flex-shrink: 0; padding: 0 2px;
-  }
-  #route-cancel:hover { color: var(--text); }
-
-  /* Count badge */
-  #count-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 0.7rem;
-    color: var(--muted);
-    z-index: 800;
-    pointer-events: none;
-    text-align: center;
-    min-width: 60px;
-  }
-  #count-badge strong { display: block; font-size: 1.1rem; color: var(--text); font-weight: 500; }
-
-  /* Legend */
-  #legend {
-    position: absolute;
-    bottom: 16px;
-    left: 16px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    z-index: 800;
-    font-size: 0.7rem;
-    line-height: 2;
-    pointer-events: none;
-  }
-  .leg-item { display: flex; align-items: center; gap: 7px; }
-  .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-
-  /* Drawer */
-  #drawer {
-    flex-shrink: 0;
-    background: var(--card);
-    border-top: 1px solid var(--border);
-    max-height: 280px;
-    overflow-y: auto;
-    transition: max-height 0.3s ease;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-    position: relative;
-  }
-  #drawer.collapsed { max-height: 0; overflow: hidden; }
-  #drawer-content { padding: 16px 20px 22px; }
-  #drawer-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 3px;
-    padding-right: 28px;
-  }
-  #drawer-meta {
-    font-size: 0.72rem;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-  }
-  #drawer-notes {
-    font-size: 0.82rem;
-    line-height: 1.55;
-    color: #d0c9bf;
-    margin-bottom: 14px;
-  }
-  #drawer-close {
-    position: absolute;
-    right: 16px; top: 14px;
-    background: none; border: none;
-    color: var(--muted); font-size: 1.1rem;
-    cursor: pointer; line-height: 1;
-  }
-  #drawer-close:hover { color: var(--text); }
-
-  /* Action buttons */
-  #drawer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-  .action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 16px;
-    border-radius: 10px;
-    border: 1.5px solid var(--border);
-    background: transparent;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .action-btn.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-  }
-  .action-btn.primary:hover { background: #cf501c; border-color: #cf501c; color: white; }
-
-  .action-btn.routing {
-    background: rgba(232,98,42,0.12);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  /* Hide default LRM panel */
-  .leaflet-routing-container { display: none !important; }
-
-  /* Popup */
-  .leaflet-popup-content-wrapper {
-    background: var(--card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
-    color: var(--text) !important;
-    font-family: 'DM Sans', sans-serif !important;
-  }
-  .leaflet-popup-tip { background: var(--card) !important; }
-  .leaflet-popup-content { margin: 12px 16px !important; min-width: 160px; }
-  .popup-name { font-family:'Playfair Display',serif; font-size:0.88rem; font-weight:700; margin-bottom:2px; }
-  .popup-cat  { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:5px; opacity:0.6; }
-  .popup-note { font-size:0.74rem; line-height:1.4; color:#c0b8ae; }
-
-  @media (max-width: 480px) {
-    #header h1 { font-size: 1.05rem; }
-    #header { padding: 10px 14px; }
-  }
-</style>
-</head>
-<body>
-
-<div id="header">
-  <h1>BCN <span>Explorer</span></h1>
-  <div id="filters">
-    <button class="filter-btn active" data-cat="all">All</button>
-    <button class="filter-btn" data-cat="sight">🏛 Sights</button>
-    <button class="filter-btn" data-cat="food">🍽 Food</button>
-    <button class="filter-btn" data-cat="cafe">☕ Cafés</button>
-    <button class="filter-btn" data-cat="bar">🍹 Bars</button>
-  </div>
-  <button id="locate-btn" onclick="locateMe()">📍 Me</button>
-</div>
-
-<div id="map-wrap">
-  <div id="map"></div>
-
-  <div id="route-info">
-    <span id="route-info-text">Calculating…</span>
-    <button id="route-cancel" onclick="clearRoute()" title="Cancel route">✕</button>
-  </div>
-
-  <div id="count-badge">
-    <strong id="count-num">—</strong>
-    places
-  </div>
-
-  <div id="legend">
-    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-you)"></div>You</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#ff7f7f"></div>Hotel</div>
-    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-sight)"></div>Sights</div>
-    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-food)"></div>Food</div>
-    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-cafe)"></div>Café</div>
-    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-bar)"></div>Bars</div>
-  </div>
-</div>
-
-<div id="drawer" class="collapsed">
-  <button id="drawer-close" onclick="closeDrawer()">✕</button>
-  <div id="drawer-content">
-    <div id="drawer-title"></div>
-    <div id="drawer-meta"></div>
-    <div id="drawer-notes"></div>
-    <div id="drawer-actions"></div>
-  </div>
-</div>
-
-<script>
-// ── MAP INIT ──────────────────────────────────────────────────────────────────
-const map = L.map('map', { center:[41.385,2.173], zoom:14, zoomControl:true });
-
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution:'© OpenStreetMap © CARTO', subdomains:'abcd', maxZoom:20
-}).addTo(map);
-
-// ── DATA ──────────────────────────────────────────────────────────────────────
-const COLORS = { sight:'#e8622a', food:'#4CAF50', cafe:'#c9a84c', bar:'#9b59b6' };
-const LABELS = { sight:'🏛 Sights', food:'🍽 Food', cafe:'☕ Café', bar:'🍹 Bars' };
-
-const places = [
-  // SIGHTS
-  { cat:'sight', name:'Sagrada Família',         lat:41.4036, lng:2.1744, emoji:'⛪', note:'Book tickets 2 weeks ahead! Open 9am–6pm.' },
-  { cat:'sight', name:'Park Güell',              lat:41.4145, lng:2.1527, emoji:'🌿', note:'Combine with Carmel del Bunkers same afternoon. Open 9am–8pm.' },
-  { cat:'sight', name:'Carmel del Bunkers',      lat:41.4193, lng:2.1618, emoji:'🔭', note:'360° panoramic views. Best at sunset. Free entry.' },
-  { cat:'sight', name:'Cathedral of Barcelona',  lat:41.3840, lng:2.1762, emoji:'⛪', note:'Gothic Quarter gem. Cloister with geese unmissable. Open 9:30am.' },
-  { cat:'sight', name:'Arc de Triomf',           lat:41.3911, lng:2.1806, emoji:'🏛', note:'Free & open 24/7. Walk promenade to Ciutadella. Golden hour 🔥' },
-  { cat:'sight', name:'Parc de la Ciutadella',   lat:41.3881, lng:2.1860, emoji:'🌳', note:'Spectacular fountain. Zoo & botanical garden inside.' },
-  { cat:'sight', name:'Casa Milà (La Pedrera)',  lat:41.3952, lng:2.1619, emoji:'🏠', note:'Open 9am–11pm. Rooftop incredible. Book ahead.' },
-  { cat:'sight', name:'Casa Batllò',             lat:41.3917, lng:2.1649, emoji:'🏠', note:'Open 8:30am–10:30pm. Magical at night. On Passeig de Gràcia.' },
-  { cat:'sight', name:'Montjuïc Castle',         lat:41.3630, lng:2.1651, emoji:'🏰', note:'Take cable car up. Olympic stadium & Jardins nearby. Great half-day.' },
-  { cat:'sight', name:'La Rambla',               lat:41.3856, lng:2.1698, emoji:'🚶', note:'Under renovation but charming. Leads to Boqueria market.' },
-  { cat:'sight', name:'Mercat de la Boqueria',   lat:41.3817, lng:2.1716, emoji:'🛒', note:'Go early! Closed Sundays.' },
-  { cat:'sight', name:'Barceloneta Beach',       lat:41.3784, lng:2.1925, emoji:'🏖', note:'Great for a coastal walk. Opium club is right here.' },
-  { cat:'sight', name:'Plaça de Catalunya',      lat:41.3870, lng:2.1700, emoji:'🏙', note:'Your central hub. Connects La Rambla, Gothic Quarter & Eixample.' },
-  { cat:'sight', name:'Plaça Reial',             lat:41.3801, lng:2.1754, emoji:'🏟', note:'Beautiful arcaded square. Great for evening drinks.' },
-  { cat:'sight', name:'El Born',                 lat:41.3843, lng:2.1824, emoji:'🏘', note:'Hipster neighbourhood — bars, restaurants, wandering.' },
-  { cat:'sight', name:'Gothic Quarter',          lat:41.3826, lng:2.1762, emoji:'🏛', note:'Medieval labyrinthine streets. Explore without a plan.' },
-  { cat:'sight', name:'Passeig de Gràcia',       lat:41.3919, lng:2.1647, emoji:'🛍', note:'High-end shopping + Casa Batllò + Casa Milà on one boulevard.' },
-  // FOOD
-  { cat:'food', name:'La Pepita ⭐ BOOK NOW',    lat:41.3980, lng:2.1610, emoji:'🍢', note:'Highly recommended tapas. Reservations essential. Incredible vibe.' },
-  { cat:'food', name:'El Nacional',              lat:41.3906, lng:2.1684, emoji:'🥘', note:'Multi-restaurant on Passeig de Gràcia. Tapas, steak, seafood. Noon–midnight.' },
-  { cat:'food', name:'Parking Pizza',            lat:41.3963, lng:2.1741, emoji:'🍕', note:'Best pizza in Barcelona. Industrial vibe. No reservations.' },
-  { cat:'food', name:'Ugot Bruncherie',          lat:41.3813, lng:2.1553, emoji:'🍳', note:'Best brunch/breakfast. Great shakshukas. Open 9am–4pm.' },
-  { cat:'food', name:'Honest Greens',            lat:41.3835, lng:2.1712, emoji:'🥗', note:'Healthy fast food on La Rambla. 2 min walk from hotel.' },
-  { cat:'food', name:'2254 Restaurant ⭐ BOOK',  lat:41.3903, lng:2.1639, emoji:'🍽', note:'Reservations required — book ASAP.' },
-  { cat:'food', name:"Viren's ⭐ BOOK",          lat:41.3965, lng:2.1618, emoji:'🍽', note:'Reservations required. Book ahead.' },
-  { cat:'food', name:'Silan (Middle Eastern)',   lat:41.3891, lng:2.1666, emoji:'🧆', note:'Middle Eastern cuisine in Eixample.' },
-  { cat:'food', name:'Tapan (Caucasian)',        lat:41.3866, lng:2.1604, emoji:'🥙', note:'Unique Caucasian restaurant — worth trying.' },
-  { cat:'food', name:'Boca Grande',              lat:41.3919, lng:2.1639, emoji:'🦐', note:'Seafood & Mediterranean. High-end. Passeig de Gràcia.' },
-  { cat:'food', name:"Da Nanni's Pizza",         lat:41.4003, lng:2.1558, emoji:'🍕', note:'Excellent Neapolitan pizza in Gràcia.' },
-  { cat:'food', name:'Sesamo (vegetarian)',      lat:41.3793, lng:2.1681, emoji:'🌱', note:'Recommended for vegetarians.' },
-  { cat:'food', name:'Soma',                     lat:41.3840, lng:2.1683, emoji:'🍴', note:'Good all-rounder in the centre.' },
-  { cat:'food', name:'Pummarola Pizza',          lat:41.3882, lng:2.1640, emoji:'🍕', note:'Authentic Neapolitan pizza near Eixample.' },
-  // CAFES
-  { cat:'cafe', name:'Brunells (hot choc + croissant)', lat:41.3854, lng:2.1807, emoji:'🥐', note:'Best croissant in Barcelona. El Born. 9am–8pm daily.' },
-  { cat:'cafe', name:'Departure Coffee',         lat:41.3836, lng:2.1649, emoji:'☕', note:'Specialty coffee, great dirty chai. Near La Rambla. 9am–6:30pm (closed Sun).' },
-  { cat:'cafe', name:'Cafe Amatller (hot choc)', lat:41.3914, lng:2.1649, emoji:'🍫', note:'Best hot chocolate in BCN. Inside Casa Amatller next to Casa Batllò.' },
-  { cat:'cafe', name:'La Papa (breakfast)',      lat:41.3826, lng:2.1672, emoji:'🥚', note:'Highly recommended for breakfast. Raval neighbourhood.' },
-  { cat:'cafe', name:'Dorigen Coffee',           lat:41.3839, lng:2.1616, emoji:'☕', note:'Specialty coffee. Raval/Gothic area.' },
-  { cat:'cafe', name:"Alice's Secret Garden",   lat:41.3921, lng:2.1566, emoji:'🌸', note:'Charming garden cafe. Eixample.' },
-  { cat:'cafe', name:'Nudes Cafe',               lat:41.3878, lng:2.1598, emoji:'☕', note:'Trendy cafe with good food. Eixample.' },
-  { cat:'cafe', name:'Lamalva',                  lat:41.3815, lng:2.1769, emoji:'🌿', note:'Gothic Quarter cafe.' },
-  { cat:'cafe', name:'Joncakes (dessert)',       lat:41.3871, lng:2.1596, emoji:'🎂', note:'Excellent cakes and pastries.' },
-  { cat:'cafe', name:'Caju Gelato',              lat:41.3855, lng:2.1744, emoji:'🍦', note:'Great gelato near Plaça Catalunya.' },
-  { cat:'cafe', name:'Paralelo Gelato',          lat:41.3735, lng:2.1614, emoji:'🍦', note:'Gelato spot near Paralelo.' },
-  { cat:'cafe', name:'Churros + Hot Chocolate',  lat:41.3808, lng:2.1756, emoji:'🥐', note:'Classic Barcelona churros. Gothic Quarter.' },
-  // BARS
-  { cat:'bar', name:'Paradiso 🍹 (World Top 5)', lat:41.3837, lng:2.1837, emoji:'🚪', note:'Hidden behind fridge door in El Born. Open from 5pm. Go before 8pm.' },
-  { cat:'bar', name:'Dr. Stravinsky',            lat:41.3842, lng:2.1807, emoji:'🧪', note:'Apothecary-themed cocktail bar. El Born. Open from 5pm.' },
-  { cat:'bar', name:'Supermercat (Speakeasy)',   lat:41.3806, lng:2.1802, emoji:'🛒', note:'Hidden bar in a fake supermarket. Gothic Quarter. Wed–Sun 7pm.' },
-  { cat:'bar', name:"Bobby's Free (Speakeasy)",  lat:41.3899, lng:2.1707, emoji:'💈', note:"Barber shop entrance. Say the secret word. Daily 7pm–3am." },
-  { cat:'bar', name:'Sips 🍸 (World #1)',        lat:41.3889, lng:2.1568, emoji:'🍸', note:'Rated #1 cocktail bar in the world. Tue–Sat 6:30pm–2am.' },
-  { cat:'bar', name:'Monk (Speakeasy)',          lat:41.3837, lng:2.1745, emoji:'🎩', note:'Gothic Quarter speakeasy. Look up entrance before going.' },
-  { cat:'bar', name:'Razzmatazz',               lat:41.3977, lng:2.1911, emoji:'🎵', note:'Best big club in BCN. 5 rooms. Thu–Sun from 12:30am.' },
-  { cat:'bar', name:'Opium (beach club)',       lat:41.3853, lng:2.1968, emoji:'🌊', note:'On Barceloneta beach. Open till 5–6am.' },
-  { cat:'bar', name:'Boca Chica',               lat:41.3893, lng:2.1670, emoji:'🎶', note:'Lively bar. Eixample/Passeig de Gràcia.' },
-  { cat:'bar', name:'Craft Barcelona (Live)',   lat:41.3901, lng:2.1672, emoji:'🎸', note:'Live music bar.' },
-  { cat:'bar', name:'Rosa Negro',               lat:41.3892, lng:2.1659, emoji:'🌹', note:'Trendy bar in Eixample.' },
-  { cat:'bar', name:'Sub Rosa',                 lat:41.3895, lng:2.1655, emoji:'🔮', note:'Intimate cocktail bar.' },
-  { cat:'bar', name:'Marlowe Bar',              lat:41.3829, lng:2.1795, emoji:'🎩', note:'Great cocktail bar. El Born.' },
-  { cat:'bar', name:"Bobby's Gin",              lat:41.3897, lng:2.1710, emoji:'🍸', note:"Excellent gin selection. Near Bobby's Free." },
-  { cat:'bar', name:'Slow Club',                lat:41.3925, lng:2.1602, emoji:'🎷', note:'Chilled intimate club. Eixample.' },
-  { cat:'bar', name:'Nevermind',                lat:41.3783, lng:2.1673, emoji:'🎵', note:'Raval area bar/club.' },
-  { cat:'bar', name:'Bornet',                   lat:41.3854, lng:2.1831, emoji:'🍺', note:'Cozy bar in El Born.' },
-  { cat:'bar', name:'La Whiskeria',             lat:41.3872, lng:2.1647, emoji:'🥃', note:'Whisky bar. Good selection.' },
-];
-
-const HOTEL = { lat:41.3811, lng:2.1728, name:'Catalunya La Rambla' };
-
-// ── ICON FACTORY ──────────────────────────────────────────────────────────────
-function makeIcon(color, emoji, size=32) {
-  return L.divIcon({
-    className:'',
-    html:`<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2px solid rgba(255,255,255,0.35);box-shadow:0 3px 12px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:${Math.round(size*0.38)}px;line-height:1">${emoji}</span></div>`,
-    iconSize:[size,size], iconAnchor:[size/2,size], popupAnchor:[0,-(size+4)]
-  });
-}
-
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let markers=[], userMarker=null, hotelMarker=null, accuracyCircle=null;
-let watchId=null, routeControl=null, activeFilter='all', userLatLng=null, activePlace=null;
-let isRouting=false;
-
-// ── HOTEL ─────────────────────────────────────────────────────────────────────
-hotelMarker = L.marker([HOTEL.lat, HOTEL.lng], { icon: makeIcon('#ff7f7f','🏨',30), zIndexOffset:500 })
-  .bindPopup('<div class="popup-name">🏨 Your Hotel</div><div class="popup-note">Catalunya La Rambla — Las Ramblas</div>')
-  .addTo(map);
-hotelMarker.on('click', () => showDrawerStatic('🏨 Your Hotel','Home base','Catalunya La Rambla — right on Las Ramblas. Plaça Catalunya is 2 min walk.'));
-
-// ── MARKERS ───────────────────────────────────────────────────────────────────
-function addMarkers(filter='all') {
-  markers.forEach(({marker}) => map.removeLayer(marker));
-  markers=[];
-  const visible = filter==='all' ? places : places.filter(p=>p.cat===filter);
-  visible.forEach(p => {
-    const m = L.marker([p.lat,p.lng], { icon: makeIcon(COLORS[p.cat], p.emoji) });
-    m.bindPopup(`<div class="popup-name">${p.name}</div><div class="popup-cat" style="color:${COLORS[p.cat]}">${LABELS[p.cat]}</div><div class="popup-note">${p.note}</div>`,{maxWidth:240});
-    m.on('click', ()=>{ activePlace=p; showDrawer(p); });
-    m.addTo(map);
-    markers.push({marker:m, place:p});
-  });
-  document.getElementById('count-num').textContent = visible.length;
-}
-addMarkers();
-
-// ── FILTERS ───────────────────────────────────────────────────────────────────
-document.querySelectorAll('.filter-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    activeFilter=btn.dataset.cat;
-    addMarkers(activeFilter);
-    closeDrawer();
-  });
-});
-
-// ── GEOLOCATION ───────────────────────────────────────────────────────────────
-function locateMe() {
-  const btn = document.getElementById('locate-btn');
-  if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
-  btn.textContent='📍 …'; btn.classList.add('locating');
-
-  navigator.geolocation.getCurrentPosition(pos=>{
-    btn.textContent='📍 Me'; btn.classList.remove('locating');
-    applyPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-    map.flyTo([pos.coords.latitude, pos.coords.longitude], 15, {duration:1.5});
-
-    if (watchId) navigator.geolocation.clearWatch(watchId);
-    watchId = navigator.geolocation.watchPosition(p2=>{
-      applyPosition(p2.coords.latitude, p2.coords.longitude, p2.coords.accuracy);
-    }, null, {enableHighAccuracy:true});
-
-  }, err=>{
-    btn.textContent='📍 Me'; btn.classList.remove('locating');
-    if (err.code===1) alert('Allow location access and try again.');
-    else alert('Could not get location. Try again.');
-  }, {enableHighAccuracy:true, timeout:12000});
-}
-
-function applyPosition(lat, lng, accuracy) {
-  userLatLng = L.latLng(lat, lng);
-
-  if (accuracyCircle) map.removeLayer(accuracyCircle);
-  accuracyCircle = L.circle([lat,lng],{
-    radius:accuracy, color:'#00bcd4', fillColor:'#00bcd4',
-    fillOpacity:0.08, weight:1, dashArray:'4 4'
-  }).addTo(map);
-
-  if (userMarker) { userMarker.setLatLng([lat,lng]); }
-  else {
-    userMarker = L.marker([lat,lng], {
-      icon: L.divIcon({
-        className:'',
-        html:`<div style="width:18px;height:18px;border-radius:50%;background:#00bcd4;border:3px solid white;box-shadow:0 0 0 5px rgba(0,188,212,0.25),0 3px 10px rgba(0,0,0,0.4);"></div>`,
-        iconSize:[18,18], iconAnchor:[9,9]
-      }),
-      zIndexOffset:1000
-    }).bindPopup('<div class="popup-name">📍 You are here</div>').addTo(map);
-  }
-
-  // Live reroute if route is active
-  if (routeControl && activePlace) {
-    routeControl.setWaypoints([userLatLng, L.latLng(activePlace.lat, activePlace.lng)]);
-  }
-}
-
-// ── ROUTING ───────────────────────────────────────────────────────────────────
-function startRoute(place) {
-  if (!userLatLng) {
-    if (confirm('Tap OK then "📍 Me" to get your location, then try routing again.')) {
-      closeDrawer();
+  <style>
+    :root {
+      --bg: #0e0d0c;
+      --card: #1a1815;
+      --border: #2e2b27;
+      --accent: #e8622a;
+      --gold: #c9a84c;
+      --text: #f0ebe4;
+      --muted: #8a8278;
+      --cat-sight: #e8622a;
+      --cat-food: #4CAF50;
+      --cat-cafe: #c9a84c;
+      --cat-bar: #9b59b6;
+      --cat-you: #00bcd4;
+      --devina: #e91e8c;
     }
-    return;
-  }
-  clearRoute(false);
-  isRouting=true;
 
-  routeControl = L.Routing.control({
-    waypoints: [userLatLng, L.latLng(place.lat, place.lng)],
-    router: L.Routing.osrmv1({
-      serviceUrl:'https://router.project-osrm.org/route/v1',
-      profile:'foot'
-    }),
-    lineOptions:{
-      styles:[
-        {color:'#e8622a', opacity:0.12, weight:12},
-        {color:'#e8622a', opacity:1,    weight:3.5, dashArray:'10 7'}
-      ],
-      addWaypoints:false
-    },
-    createMarker:()=>null,
-    fitSelectedRoutes:true,
-    show:false,
-    collapsible:false
-  }).addTo(map);
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  // Show pill
-  const ri = document.getElementById('route-info');
-  document.getElementById('route-info-text').innerHTML = `Calculating route to <strong>${place.name}</strong>…`;
-  ri.classList.add('visible');
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-  routeControl.on('routesfound', e=>{
-    const s = e.routes[0].summary;
-    const dist = s.totalDistance>=1000
-      ? (s.totalDistance/1000).toFixed(1)+' km'
-      : Math.round(s.totalDistance)+' m';
-    const mins = Math.ceil(s.totalTime/60);
-    document.getElementById('route-info-text').innerHTML =
-      `🚶 <strong>${mins} min</strong> · ${dist} · ${place.name}`;
-  });
+    /* Header */
+    #header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+      gap: 12px;
+    }
+    #header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    #header h1 span { color: var(--accent); }
 
-  routeControl.on('routingerror', ()=>{
-    document.getElementById('route-info-text').innerHTML='⚠️ Could not calculate route. Check your internet.';
-  });
+    /* Filters */
+    #filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    #filters::-webkit-scrollbar { display: none; }
 
-  renderActions(place);
-}
+    .filter-btn {
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .filter-btn.active { color: var(--text); border-color: currentColor; }
+    .filter-btn[data-cat="all"].active   { border-color: var(--text);      color: var(--text); }
+    .filter-btn[data-cat="sight"].active { border-color: var(--cat-sight); color: var(--cat-sight); }
+    .filter-btn[data-cat="food"].active  { border-color: var(--cat-food);  color: var(--cat-food); }
+    .filter-btn[data-cat="cafe"].active  { border-color: var(--cat-cafe);  color: var(--cat-cafe); }
+    .filter-btn[data-cat="bar"].active   { border-color: var(--cat-bar);   color: var(--cat-bar); }
 
-function clearRoute(updateUI=true) {
-  if (routeControl) { map.removeControl(routeControl); routeControl=null; }
-  isRouting=false;
-  if (updateUI) {
-    document.getElementById('route-info').classList.remove('visible');
-    if (activePlace) renderActions(activePlace);
-  }
-}
+    /* Locate btn */
+    #locate-btn {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    #locate-btn:hover { background: var(--accent); color: white; }
+    #locate-btn.locating { animation: pulsebtn 1s infinite; }
+    @keyframes pulsebtn { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-// ── GOOGLE MAPS ───────────────────────────────────────────────────────────────
-function openGoogleMaps(place) {
-  const origin = userLatLng
-    ? `${userLatLng.lat},${userLatLng.lng}`
-    : `${HOTEL.lat},${HOTEL.lng}`;
-  const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${place.lat},${place.lng}&travelmode=walking`;
-  window.open(url, '_blank');
-}
+    /* Map */
+    #map-wrap { flex: 1; position: relative; overflow: hidden; }
+    #map { width: 100%; height: 100%; }
 
-// ── DRAWER ────────────────────────────────────────────────────────────────────
-function showDrawer(p) {
-  activePlace=p;
-  document.getElementById('drawer-title').textContent = p.name;
-  document.getElementById('drawer-meta').innerHTML = `<span style="color:${COLORS[p.cat]}">${LABELS[p.cat]}</span>`;
-  document.getElementById('drawer-notes').textContent = p.note;
-  renderActions(p);
-  document.getElementById('drawer').classList.remove('collapsed');
-}
+    /* Route info pill */
+    #route-info {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1.5px solid var(--accent);
+      border-radius: 24px;
+      padding: 8px 18px;
+      font-size: 0.76rem;
+      color: var(--text);
+      z-index: 900;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.55);
+      max-width: calc(100vw - 120px);
+    }
+    #route-info.visible { display: flex; }
+    #route-info strong { color: var(--accent); }
+    #route-info-text { overflow: hidden; text-overflow: ellipsis; }
+    #route-cancel {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      flex-shrink: 0;
+      padding: 0 2px;
+    }
+    #route-cancel:hover { color: var(--text); }
 
-function showDrawerStatic(title, metaText, noteText) {
-  activePlace=null;
-  document.getElementById('drawer-title').textContent = title;
-  document.getElementById('drawer-meta').innerHTML = `<span style="color:#ff7f7f">${metaText}</span>`;
-  document.getElementById('drawer-notes').textContent = noteText;
-  document.getElementById('drawer-actions').innerHTML='';
-  document.getElementById('drawer').classList.remove('collapsed');
-}
+    /* Count badge */
+    #count-badge {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      z-index: 800;
+      pointer-events: none;
+      text-align: center;
+      min-width: 60px;
+    }
+    #count-badge strong { display: block; font-size: 1.1rem; color: var(--text); font-weight: 500; }
 
-function renderActions(p) {
-  const actions = document.getElementById('drawer-actions');
-  const routeClass = isRouting ? 'action-btn routing' : 'action-btn';
-  const routeLabel = isRouting ? '✕ Cancel Route' : '🗺 Route on Map';
-  actions.innerHTML = `
-    <button class="${routeClass}" onclick="toggleRoute()">
-      <span>${routeLabel}</span>
-    </button>
-    <button class="action-btn primary" onclick="handleGMaps()">
-      <span>↗ Google Maps</span>
-    </button>
-  `;
-}
+    /* Legend */
+    #legend {
+      position: absolute;
+      bottom: 16px; left: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      z-index: 800;
+      font-size: 0.7rem;
+      line-height: 2;
+      pointer-events: none;
+    }
+    .leg-item { display: flex; align-items: center; gap: 7px; }
+    .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-function toggleRoute() {
-  if (!activePlace) return;
-  if (isRouting) clearRoute(true);
-  else startRoute(activePlace);
-}
+    /* Drawer */
+    #drawer {
+      flex-shrink: 0;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      max-height: 300px;
+      overflow-y: auto;
+      transition: max-height 0.3s ease;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      position: relative;
+    }
+    #drawer.collapsed { max-height: 0; overflow: hidden; }
+    #drawer-content { padding: 16px 20px 22px; }
 
-function handleGMaps() {
-  if (activePlace) openGoogleMaps(activePlace);
-}
+    /* Drawer header row */
+    #drawer-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 3px;
+    }
+    #drawer-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.25;
+      flex: 1;
+    }
 
-function closeDrawer() {
-  document.getElementById('drawer').classList.add('collapsed');
-}
+    /* Devina badge */
+    #devina-badge {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(135deg, rgba(233,30,140,0.18), rgba(233,30,140,0.08));
+      border: 1.5px solid var(--devina);
+      border-radius: 20px;
+      padding: 4px 10px 4px 7px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--devina);
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+      animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #devina-badge.visible { display: flex; }
+    @keyframes badgePop {
+      0%   { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+    .devina-check {
+      width: 14px; height: 14px;
+      background: var(--devina);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px;
+      color: white;
+      flex-shrink: 0;
+    }
 
-map.on('click', closeDrawer);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
-</script>
+    #drawer-meta {
+      font-size: 0.72rem;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    #drawer-notes {
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: #d0c9bf;
+      margin-bottom: 14px;
+    }
+    #drawer-close {
+      position: absolute;
+      right: 16px; top: 14px;
+      background: none; border: none;
+      color: var(--muted); font-size: 1.1rem;
+      cursor: pointer; line-height: 1;
+    }
+    #drawer-close:hover { color: var(--text); }
+
+    /* Action buttons */
+    #drawer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .action-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+    .action-btn.primary:hover { background: #cf501c; border-color: #cf501c; color: white; }
+    .action-btn.routing { background: rgba(232,98,42,0.12); border-color: var(--accent); color: var(--accent); }
+
+    /* Hide default LRM panel */
+    .leaflet-routing-container { display: none !important; }
+
+    /* Popup */
+    .leaflet-popup-content-wrapper {
+      background: var(--card) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+      color: var(--text) !important;
+      font-family: 'DM Sans', sans-serif !important;
+    }
+    .leaflet-popup-tip { background: var(--card) !important; }
+    .leaflet-popup-content { margin: 12px 16px !important; min-width: 160px; }
+    .popup-name { font-family:'Playfair Display',serif; font-size:0.88rem; font-weight:700; margin-bottom:2px; }
+    .popup-cat  { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:5px; opacity:0.6; }
+    .popup-note { font-size:0.74rem; line-height:1.4; color:#c0b8ae; }
+
+    @media (max-width: 480px) {
+      #header h1 { font-size: 1.05rem; }
+      #header { padding: 10px 14px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="header">
+    <h1>BCN <span>Explorer</span></h1>
+    <div id="filters">
+      <button class="filter-btn active" data-cat="all">All</button>
+      <button class="filter-btn" data-cat="sight">🏛 Sights</button>
+      <button class="filter-btn" data-cat="food">🍽 Food</button>
+      <button class="filter-btn" data-cat="cafe">☕ Cafés</button>
+      <button class="filter-btn" data-cat="bar">🍹 Bars</button>
+    </div>
+    <button id="locate-btn" onclick="locateMe()">📍 Me</button>
+  </div>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+
+    <div id="route-info">
+      <span id="route-info-text">Calculating…</span>
+      <button id="route-cancel" onclick="clearRoute()" title="Cancel route">✕</button>
+    </div>
+
+    <div id="count-badge">
+      <strong id="count-num">—</strong>
+      places
+    </div>
+
+    <div id="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-you)"></div>You</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ff7f7f"></div>Hotel</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-sight)"></div>Sights</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-food)"></div>Food</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-cafe)"></div>Café</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-bar)"></div>Bars</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--devina)"></div>Devina ✓</div>
+    </div>
+  </div>
+
+  <div id="drawer" class="collapsed">
+    <button id="drawer-close" onclick="closeDrawer()">✕</button>
+    <div id="drawer-content">
+      <div id="drawer-header">
+        <div id="drawer-title"></div>
+        <div id="devina-badge">
+          <span class="devina-check">✓</span>
+          Devina Approved
+        </div>
+      </div>
+      <div id="drawer-meta"></div>
+      <div id="drawer-notes"></div>
+      <div id="drawer-actions"></div>
+    </div>
+  </div>
+
+  <script>
+    // ── MAP ───────────────────────────────────────────────────────────────────────
+    const map = L.map('map', { center: [41.385, 2.173], zoom: 14, zoomControl: true });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap © CARTO',
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(map);
+
+    // ── COLORS / LABELS ───────────────────────────────────────────────────────────
+    const COLORS = { sight: '#e8622a', food: '#4CAF50', cafe: '#c9a84c', bar: '#9b59b6' };
+    const LABELS = { sight: '🏛 Sights', food: '🍽 Food', cafe: '☕ Café', bar: '🍹 Bars' };
+    const DEVINA_COLOR = '#e91e8c';
+
+    // ── DATA ──────────────────────────────────────────────────────────────────────
+    // devina:true = Devina's personal recommendation
+    const places = [
+      // SIGHTS
+      { cat:'sight', devina:true,  name:'Sagrada Família',         lat:41.4036, lng:2.1744, emoji:'⛪', note:'Book tickets 2 weeks ahead! Open 9am–6pm.' },
+      { cat:'sight', devina:true,  name:'Park Güell',              lat:41.4145, lng:2.1527, emoji:'🌿', note:'Combine with Carmel del Bunkers same afternoon. Open 9am–8pm.' },
+      { cat:'sight', devina:true,  name:'Carmel del Bunkers',      lat:41.4193, lng:2.1618, emoji:'🔭', note:'360° panoramic views. Best at sunset. Free entry.' },
+      { cat:'sight', devina:true,  name:'Cathedral of Barcelona',  lat:41.3840, lng:2.1762, emoji:'⛪', note:'Gothic Quarter gem. Cloister with geese unmissable. Open 9:30am.' },
+      { cat:'sight', devina:true,  name:'Arc de Triomf',           lat:41.3911, lng:2.1806, emoji:'🏛', note:'Free & open 24/7. Walk promenade to Ciutadella. Golden hour 🔥' },
+      { cat:'sight', devina:false, name:'Parc de la Ciutadella',   lat:41.3881, lng:2.1860, emoji:'🌳', note:'Spectacular fountain. Zoo & botanical garden inside.' },
+      { cat:'sight', devina:true,  name:'Casa Milà (La Pedrera)',  lat:41.3952, lng:2.1619, emoji:'🏠', note:'Open 9am–11pm. Rooftop incredible. Book ahead.' },
+      { cat:'sight', devina:true,  name:'Casa Batlló',             lat:41.3917, lng:2.1649, emoji:'🏠', note:'Open 8:30am–10:30pm. Magical at night. On Passeig de Gràcia.' },
+      { cat:'sight', devina:false, name:'Montjuïc Castle',         lat:41.3630, lng:2.1651, emoji:'🏰', note:'Take cable car up. Olympic stadium & Jardins nearby.' },
+      { cat:'sight', devina:true,  name:'La Rambla',               lat:41.3856, lng:2.1698, emoji:'🚶', note:'Under renovation but charming. Leads to Boqueria market.' },
+      { cat:'sight', devina:true,  name:'Mercat de la Boqueria',   lat:41.3817, lng:2.1716, emoji:'🛒', note:'Go early! Closed Sundays.' },
+      { cat:'sight', devina:false, name:'Barceloneta Beach',       lat:41.3784, lng:2.1925, emoji:'🏖', note:'Great for a coastal walk. Opium club is right here.' },
+      { cat:'sight', devina:true,  name:'Plaça de Catalunya',      lat:41.3870, lng:2.1700, emoji:'🏙', note:'Your central hub. Connects La Rambla, Gothic Quarter & Eixample.' },
+      { cat:'sight', devina:true,  name:'Plaça Reial',             lat:41.3801, lng:2.1754, emoji:'🏟', note:'Beautiful arcaded square. Great for evening drinks.' },
+      { cat:'sight', devina:true,  name:'El Born',                 lat:41.3843, lng:2.1824, emoji:'🏘', note:'Hipster neighbourhood — bars, restaurants, wandering.' },
+      { cat:'sight', devina:true,  name:'Gothic Quarter',          lat:41.3826, lng:2.1762, emoji:'🏛', note:'Medieval labyrinthine streets. Explore without a plan.' },
+      { cat:'sight', devina:true,  name:'Passeig de Gràcia',       lat:41.3919, lng:2.1647, emoji:'🛍', note:'High-end shopping + Casa Batlló + Casa Milà on one boulevard.' },
+
+      // FOOD
+      { cat:'food', devina:true,  name:'La Pepita ⭐ BOOK NOW',    lat:41.3980, lng:2.1610, emoji:'🍢', note:'Highly recommended tapas. Reservations essential. Incredible vibe.' },
+      { cat:'food', devina:true,  name:'El Nacional',              lat:41.3906, lng:2.1684, emoji:'🥘', note:'Multi-restaurant on Passeig de Gràcia. Tapas, steak, seafood. Noon–midnight.' },
+      { cat:'food', devina:true,  name:'Parking Pizza',            lat:41.3963, lng:2.1741, emoji:'🍕', note:'Best pizza in Barcelona. Industrial vibe. No reservations.' },
+      { cat:'food', devina:true,  name:'Ugot Bruncherie',          lat:41.3813, lng:2.1553, emoji:'🍳', note:'Best brunch/breakfast. Great shakshukas. Open 9am–4pm.' },
+      { cat:'food', devina:true,  name:'Honest Greens',            lat:41.3835, lng:2.1712, emoji:'🥗', note:'Healthy fast food on La Rambla. 2 min walk from hotel.' },
+      { cat:'food', devina:true,  name:'2254 Restaurant ⭐ BOOK',  lat:41.3903, lng:2.1639, emoji:'🍽', note:'Reservations required — book ASAP.' },
+      { cat:'food', devina:true,  name:"Viren's ⭐ BOOK",          lat:41.3965, lng:2.1618, emoji:'🍽', note:'Reservations required. Book ahead.' },
+      { cat:'food', devina:false, name:'Silan (Middle Eastern)',   lat:41.3891, lng:2.1666, emoji:'🧆', note:'Middle Eastern cuisine in Eixample.' },
+      { cat:'food', devina:false, name:'Tapan (Caucasian)',        lat:41.3866, lng:2.1604, emoji:'🥙', note:'Unique Caucasian restaurant — worth trying.' },
+      { cat:'food', devina:false, name:'Boca Grande',              lat:41.3919, lng:2.1639, emoji:'🦐', note:'Seafood & Mediterranean. High-end. Passeig de Gràcia.' },
+      { cat:'food', devina:false, name:"Da Nanni's Pizza",         lat:41.4003, lng:2.1558, emoji:'🍕', note:'Excellent Neapolitan pizza in Gràcia.' },
+      { cat:'food', devina:false, name:'Sesamo (vegetarian)',      lat:41.3793, lng:2.1681, emoji:'🌱', note:'Recommended for vegetarians.' },
+      { cat:'food', devina:false, name:'Soma',                     lat:41.3840, lng:2.1683, emoji:'🍴', note:'Good all-rounder in the centre.' },
+      { cat:'food', devina:false, name:'Pummarola Pizza',          lat:41.3882, lng:2.1640, emoji:'🍕', note:'Authentic Neapolitan pizza near Eixample.' },
+
+      // CAFES
+      { cat:'cafe', devina:true,  name:'Brunells (hot choc + croissant)', lat:41.3854, lng:2.1807, emoji:'🥐', note:'Best croissant in Barcelona. El Born. 9am–8pm daily.' },
+      { cat:'cafe', devina:true,  name:'Departure Coffee',         lat:41.3836, lng:2.1649, emoji:'☕', note:'Specialty coffee, great dirty chai. Near La Rambla. 9am–6:30pm (closed Sun).' },
+      { cat:'cafe', devina:true,  name:'Cafe Amatller (hot choc)', lat:41.3914, lng:2.1649, emoji:'🍫', note:'Best hot chocolate in BCN. Inside Casa Amatller next to Casa Batlló.' },
+      { cat:'cafe', devina:true,  name:'La Papa (breakfast)',      lat:41.3826, lng:2.1672, emoji:'🥚', note:'Highly recommended for breakfast. Raval neighbourhood.' },
+      { cat:'cafe', devina:false, name:'Dorigen Coffee',           lat:41.3839, lng:2.1616, emoji:'☕', note:'Specialty coffee. Raval/Gothic area.' },
+      { cat:'cafe', devina:false, name:"Alice's Secret Garden",    lat:41.3921, lng:2.1566, emoji:'🌸', note:'Charming garden cafe. Eixample.' },
+      { cat:'cafe', devina:false, name:'Nudes Cafe',               lat:41.3878, lng:2.1598, emoji:'☕', note:'Trendy cafe with good food. Eixample.' },
+      { cat:'cafe', devina:false, name:'Lamalva',                  lat:41.3815, lng:2.1769, emoji:'🌿', note:'Gothic Quarter cafe.' },
+      { cat:'cafe', devina:false, name:'Joncakes (dessert)',       lat:41.3871, lng:2.1596, emoji:'🎂', note:'Excellent cakes and pastries.' },
+      { cat:'cafe', devina:false, name:'Caju Gelato',              lat:41.3855, lng:2.1744, emoji:'🍦', note:'Great gelato near Plaça Catalunya.' },
+      { cat:'cafe', devina:false, name:'Paralelo Gelato',          lat:41.3735, lng:2.1614, emoji:'🍦', note:'Gelato spot near Paral·lel.' },
+      { cat:'cafe', devina:false, name:'Churros + Hot Chocolate',  lat:41.3808, lng:2.1756, emoji:'🥐', note:'Classic Barcelona churros. Gothic Quarter.' },
+
+      // BARS
+      { cat:'bar', devina:true,  name:'Paradiso 🍹 (World Top 5)', lat:41.3837, lng:2.1837, emoji:'🚪', note:'Hidden behind fridge door in El Born. Open from 5pm. Go before 8pm.' },
+      { cat:'bar', devina:true,  name:'Dr. Stravinsky',            lat:41.3842, lng:2.1807, emoji:'🧪', note:'Apothecary-themed cocktail bar. El Born. Open from 5pm.' },
+      { cat:'bar', devina:true,  name:'Supermercat (Speakeasy)',   lat:41.3806, lng:2.1802, emoji:'🛒', note:'Hidden bar in a fake supermarket. Gothic Quarter. Wed–Sun 7pm.' },
+      { cat:'bar', devina:true,  name:"Bobby's Free (Speakeasy)",  lat:41.3899, lng:2.1707, emoji:'💈', note:"Barber shop entrance. Say the secret word. Daily 7pm–3am." },
+      { cat:'bar', devina:true,  name:'Sips 🍸 (World #1)',        lat:41.3889, lng:2.1568, emoji:'🍸', note:'Rated #1 cocktail bar in the world. Tue–Sat 6:30pm–2am.' },
+      { cat:'bar', devina:false, name:'Monk (Speakeasy)',          lat:41.3837, lng:2.1745, emoji:'🎩', note:'Gothic Quarter speakeasy. Look up entrance before going.' },
+      { cat:'bar', devina:true,  name:'Razzmatazz',               lat:41.3977, lng:2.1911, emoji:'🎵', note:'Best big club in BCN. 5 rooms. Thu–Sun from 12:30am.' },
+      { cat:'bar', devina:true,  name:'Opium (beach club)',        lat:41.3853, lng:2.1968, emoji:'🌊', note:'On Barceloneta beach. Open till 5–6am.' },
+      { cat:'bar', devina:false, name:'Boca Chica',                lat:41.3893, lng:2.1670, emoji:'🎶', note:'Lively bar. Eixample/Passeig de Gràcia.' },
+      { cat:'bar', devina:false, name:'Craft Barcelona (Live)',    lat:41.3901, lng:2.1672, emoji:'🎸', note:'Live music bar.' },
+      { cat:'bar', devina:false, name:'Rosa Negro',                lat:41.3892, lng:2.1659, emoji:'🌹', note:'Trendy bar in Eixample.' },
+      { cat:'bar', devina:false, name:'Sub Rosa',                  lat:41.3895, lng:2.1655, emoji:'🔮', note:'Intimate cocktail bar.' },
+      { cat:'bar', devina:true,  name:'Marlowe Bar',               lat:41.3829, lng:2.1795, emoji:'🎩', note:'Great cocktail bar. El Born.' },
+      { cat:'bar', devina:false, name:"Bobby's Gin",               lat:41.3897, lng:2.1710, emoji:'🍸', note:"Excellent gin selection. Near Bobby's Free." },
+      { cat:'bar', devina:false, name:'Slow Club',                 lat:41.3925, lng:2.1602, emoji:'🎷', note:'Chilled intimate club. Eixample.' },
+      { cat:'bar', devina:false, name:'Nevermind',                 lat:41.3783, lng:2.1673, emoji:'🎵', note:'Raval area bar/club.' },
+      { cat:'bar', devina:false, name:'Bornet',                    lat:41.3854, lng:2.1831, emoji:'🍺', note:'Cozy bar in El Born.' },
+      { cat:'bar', devina:false, name:'La Whiskeria',              lat:41.3872, lng:2.1647, emoji:'🥃', note:'Whisky bar. Good selection.' },
+    ];
+
+    const HOTEL = { lat: 41.3811, lng: 2.1728 };
+
+    // ── ICON FACTORY ──────────────────────────────────────────────────────────────
+    function makeIcon(color, emoji, size = 32, devina = false) {
+      // Devina pins get a pink glow ring
+      const ring = devina
+        ? `box-shadow:0 0 0 3px ${DEVINA_COLOR}, 0 3px 14px rgba(0,0,0,0.55);`
+        : `box-shadow:0 3px 12px rgba(0,0,0,0.5);`;
+
+      return L.divIcon({
+        className: '',
+        html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2px solid rgba(255,255,255,0.35);${ring}display:flex;align-items:center;justify-content:center;position:relative;">
+          <span style="transform:rotate(45deg);font-size:${Math.round(size*0.38)}px;line-height:1">${emoji}</span>
+          ${
+            devina
+              ? `<div style="position:absolute;top:-5px;right:-5px;transform:rotate(45deg);width:13px;height:13px;border-radius:50%;background:${DEVINA_COLOR};border:1.5px solid #0e0d0c;display:flex;align-items:center;justify-content:center;font-size:7px;color:white;line-height:1;">✓</div>`
+              : ''
+          }
+        </div>`,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size],
+        popupAnchor: [0, -(size + 4)]
+      });
+    }
+
+    // ── STATE ─────────────────────────────────────────────────────────────────────
+    let markers = [], userMarker = null, hotelMarker = null, accuracyCircle = null;
+    let watchId = null, routeControl = null, activeFilter = 'all', userLatLng = null, activePlace = null;
+    let isRouting = false;
+
+    // ── HOTEL ─────────────────────────────────────────────────────────────────────
+    hotelMarker = L.marker([HOTEL.lat, HOTEL.lng], { icon: makeIcon('#ff7f7f', '🏨', 30, false), zIndexOffset: 500 })
+      .bindPopup('<div class="popup-name">🏨 Your Hotel</div><div class="popup-note">Catalunya La Rambla</div>')
+      .addTo(map);
+
+    hotelMarker.on('click', () =>
+      showDrawerStatic(
+        '🏨 Your Hotel',
+        'Home base',
+        'Catalunya La Rambla — right on Las Ramblas. Plaça Catalunya 2 min walk.',
+        false
+      )
+    );
+
+    // ── MARKERS ───────────────────────────────────────────────────────────────────
+    function addMarkers(filter = 'all') {
+      markers.forEach(({ marker }) => map.removeLayer(marker));
+      markers = [];
+
+      const visible = filter === 'all' ? places : places.filter(p => p.cat === filter);
+
+      visible.forEach(p => {
+        const m = L.marker([p.lat, p.lng], { icon: makeIcon(COLORS[p.cat], p.emoji, 32, p.devina) });
+
+        m.bindPopup(
+          `<div class="popup-name">${p.name}</div>
+           <div class="popup-cat" style="color:${COLORS[p.cat]}">${LABELS[p.cat]}</div>
+           <div class="popup-note">${p.note}</div>`,
+          { maxWidth: 240 }
+        );
+
+        m.on('click', () => { activePlace = p; showDrawer(p); });
+        m.addTo(map);
+        markers.push({ marker: m, place: p });
+      });
+
+      document.getElementById('count-num').textContent = visible.length;
+    }
+    addMarkers();
+
+    // ── FILTERS ───────────────────────────────────────────────────────────────────
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.cat;
+        addMarkers(activeFilter);
+        closeDrawer();
+      });
+    });
+
+    // ── GEOLOCATION ───────────────────────────────────────────────────────────────
+    function locateMe() {
+      const btn = document.getElementById('locate-btn');
+      if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
+
+      btn.textContent = '📍 …';
+      btn.classList.add('locating');
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        btn.textContent = '📍 Me';
+        btn.classList.remove('locating');
+
+        applyPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+        map.flyTo([pos.coords.latitude, pos.coords.longitude], 15, { duration: 1.5 });
+
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        watchId = navigator.geolocation.watchPosition(
+          p2 => applyPosition(p2.coords.latitude, p2.coords.longitude, p2.coords.accuracy),
+          null,
+          { enableHighAccuracy: true }
+        );
+      }, err => {
+        btn.textContent = '📍 Me';
+        btn.classList.remove('locating');
+        if (err.code === 1) alert('Allow location access and try again.');
+        else alert('Could not get location. Try again.');
+      }, { enableHighAccuracy: true, timeout: 12000 });
+    }
+
+    function applyPosition(lat, lng, accuracy) {
+      userLatLng = L.latLng(lat, lng);
+
+      if (accuracyCircle) map.removeLayer(accuracyCircle);
+      accuracyCircle = L.circle([lat, lng], {
+        radius: accuracy,
+        color: '#00bcd4',
+        fillColor: '#00bcd4',
+        fillOpacity: 0.08,
+        weight: 1,
+        dashArray: '4 4'
+      }).addTo(map);
+
+      if (userMarker) {
+        userMarker.setLatLng([lat, lng]);
+      } else {
+        userMarker = L.marker([lat, lng], {
+          icon: L.divIcon({
+            className: '',
+            html: `<div style="width:18px;height:18px;border-radius:50%;background:#00bcd4;border:3px solid white;box-shadow:0 0 0 5px rgba(0,188,212,0.25),0 3px 10px rgba(0,0,0,0.4);"></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+          }),
+          zIndexOffset: 1000
+        }).bindPopup('<div class="popup-name">📍 You are here</div>').addTo(map);
+      }
+
+      if (routeControl && activePlace) {
+        routeControl.setWaypoints([userLatLng, L.latLng(activePlace.lat, activePlace.lng)]);
+      }
+    }
+
+    // ── ROUTING ───────────────────────────────────────────────────────────────────
+    function startRoute(place) {
+      if (!userLatLng) { alert('Tap "📍 Me" first to share your location.'); return; }
+
+      clearRoute(false);
+      isRouting = true;
+
+      routeControl = L.Routing.control({
+        waypoints: [userLatLng, L.latLng(place.lat, place.lng)],
+        router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'foot' }),
+        lineOptions: {
+          styles: [
+            { color: '#e8622a', opacity: 0.12, weight: 12 },
+            { color: '#e8622a', opacity: 1, weight: 3.5, dashArray: '10 7' }
+          ],
+          addWaypoints: false
+        },
+        createMarker: () => null,
+        fitSelectedRoutes: true,
+        show: false,
+        collapsible: false
+      }).addTo(map);
+
+      const ri = document.getElementById('route-info');
+      document.getElementById('route-info-text').innerHTML = `Calculating route to <strong>${place.name}</strong>…`;
+      ri.classList.add('visible');
+
+      routeControl.on('routesfound', e => {
+        const s = e.routes[0].summary;
+        const dist = s.totalDistance >= 1000 ? (s.totalDistance / 1000).toFixed(1) + ' km' : Math.round(s.totalDistance) + ' m';
+        const mins = Math.ceil(s.totalTime / 60);
+        document.getElementById('route-info-text').innerHTML = `🚶 <strong>${mins} min</strong> · ${dist} · ${place.name}`;
+      });
+
+      routeControl.on('routingerror', () => {
+        document.getElementById('route-info-text').innerHTML = '⚠️ Could not calculate route.';
+      });
+
+      renderActions(place);
+    }
+
+    function clearRoute(updateUI = true) {
+      if (routeControl) {
+        map.removeControl(routeControl);
+        routeControl = null;
+      }
+      isRouting = false;
+
+      if (updateUI) {
+        document.getElementById('route-info').classList.remove('visible');
+        if (activePlace) renderActions(activePlace);
+      }
+    }
+
+    function openGoogleMaps(place) {
+      const origin = userLatLng ? `${userLatLng.lat},${userLatLng.lng}` : `${HOTEL.lat},${HOTEL.lng}`;
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${place.lat},${place.lng}&travelmode=walking`,
+        '_blank'
+      );
+    }
+
+    // ── DRAWER ────────────────────────────────────────────────────────────────────
+    function showDrawer(p) {
+      activePlace = p;
+      document.getElementById('drawer-title').textContent = p.name;
+      document.getElementById('drawer-meta').innerHTML = `<span style="color:${COLORS[p.cat]}">${LABELS[p.cat]}</span>`;
+      document.getElementById('drawer-notes').textContent = p.note;
+
+      // Show or hide Devina badge
+      const badge = document.getElementById('devina-badge');
+      if (p.devina) {
+        badge.classList.add('visible');
+        // Re-trigger animation
+        badge.style.animation = 'none';
+        badge.offsetHeight; // reflow
+        badge.style.animation = '';
+      } else {
+        badge.classList.remove('visible');
+      }
+
+      renderActions(p);
+      document.getElementById('drawer').classList.remove('collapsed');
+    }
+
+    function showDrawerStatic(title, metaText, noteText, showDevina) {
+      activePlace = null;
+      document.getElementById('drawer-title').textContent = title;
+      document.getElementById('drawer-meta').innerHTML = `<span style="color:#ff7f7f">${metaText}</span>`;
+      document.getElementById('drawer-notes').textContent = noteText;
+
+      // showDevina currently unused for hotel, keep hook
+      const badge = document.getElementById('devina-badge');
+      if (showDevina) badge.classList.add('visible');
+      else badge.classList.remove('visible');
+
+      document.getElementById('drawer-actions').innerHTML = '';
+      document.getElementById('drawer').classList.remove('collapsed');
+    }
+
+    function renderActions(p) {
+      const routeClass = isRouting ? 'action-btn routing' : 'action-btn';
+      const routeLabel = isRouting ? '✕ Cancel Route' : '🗺 Route on Map';
+      document.getElementById('drawer-actions').innerHTML = `
+        <button class="${routeClass}" onclick="toggleRoute()">${routeLabel}</button>
+        <button class="action-btn primary" onclick="handleGMaps()">↗ Google Maps</button>
+      `;
+    }
+
+    function toggleRoute() { if (!activePlace) return; isRouting ? clearRoute(true) : startRoute(activePlace); }
+    function handleGMaps() { if (activePlace) openGoogleMaps(activePlace); }
+
+    function closeDrawer() { document.getElementById('drawer').classList.add('collapsed'); }
+    map.on('click', closeDrawer);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+  </script>
 </body>
 </html>
