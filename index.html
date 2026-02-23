@@ -1,590 +1,628 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BCN Explorer — Sarthak's Map</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BCN Explorer — Sarthak's Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
+<style>
+  :root {
+    --bg: #0e0d0c;
+    --card: #1a1815;
+    --border: #2e2b27;
+    --accent: #e8622a;
+    --gold: #c9a84c;
+    --text: #f0ebe4;
+    --muted: #8a8278;
+    --cat-sight: #e8622a;
+    --cat-food: #4CAF50;
+    --cat-cafe: #c9a84c;
+    --cat-bar: #9b59b6;
+    --cat-you: #00bcd4;
+  }
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-  <style>
-    :root {
-      --bg: #0e0d0c;
-      --card: #1a1815;
-      --border: #2e2b27;
-      --accent: #e8622a;
-      --gold: #c9a84c;
-      --text: #f0ebe4;
-      --muted: #8a8278;
-      --cat-sight: #e8622a;
-      --cat-food: #4CAF50;
-      --cat-cafe: #c9a84c;
-      --cat-bar: #9b59b6;
-      --cat-you: #00bcd4;
-    }
+  /* Header */
+  #header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    z-index: 1000;
+    gap: 12px;
+  }
+  #header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  #header h1 span { color: var(--accent); }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* Filters */
+  #filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #filters::-webkit-scrollbar { display: none; }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: "DM Sans", sans-serif;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+  .filter-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .filter-btn.active { color: var(--text); border-color: currentColor; }
+  .filter-btn[data-cat="all"].active   { border-color: var(--text);       color: var(--text); }
+  .filter-btn[data-cat="sight"].active { border-color: var(--cat-sight);  color: var(--cat-sight); }
+  .filter-btn[data-cat="food"].active  { border-color: var(--cat-food);   color: var(--cat-food); }
+  .filter-btn[data-cat="cafe"].active  { border-color: var(--cat-cafe);   color: var(--cat-cafe); }
+  .filter-btn[data-cat="bar"].active   { border-color: var(--cat-bar);    color: var(--cat-bar); }
 
-    /* Header */
-    #header {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      z-index: 1000;
-      gap: 12px;
-    }
+  /* Locate btn */
+  #locate-btn {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  #locate-btn:hover { background: var(--accent); color: white; }
+  #locate-btn.locating { animation: pulsebtn 1s infinite; }
+  @keyframes pulsebtn { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-    #header h1 {
-      font-family: "Playfair Display", serif;
-      font-size: 1.3rem;
-      font-weight: 900;
-      letter-spacing: -0.02em;
-      white-space: nowrap;
-    }
-    #header h1 span { color: var(--accent); }
+  /* Map wrapper */
+  #map-wrap { flex: 1; position: relative; overflow: hidden; }
+  #map { width: 100%; height: 100%; }
 
-    /* Filter pills */
-    #filters {
-      display: flex;
-      gap: 6px;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    #filters::-webkit-scrollbar { display: none; }
+  /* Route info pill */
+  #route-info {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card);
+    border: 1.5px solid var(--accent);
+    border-radius: 24px;
+    padding: 8px 18px;
+    font-size: 0.76rem;
+    color: var(--text);
+    z-index: 900;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.55);
+    max-width: calc(100vw - 120px);
+  }
+  #route-info.visible { display: flex; }
+  #route-info strong { color: var(--accent); }
+  #route-info-text { overflow: hidden; text-overflow: ellipsis; }
+  #route-cancel {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 1rem; line-height: 1;
+    flex-shrink: 0; padding: 0 2px;
+  }
+  #route-cancel:hover { color: var(--text); }
 
-    .filter-btn {
-      padding: 5px 12px;
-      border-radius: 20px;
-      border: 1.5px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-family: "DM Sans", sans-serif;
-      font-size: 0.72rem;
-      font-weight: 500;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
-    .filter-btn.active {
-      color: var(--text);
-      border-color: currentColor;
-    }
-    .filter-btn[data-cat="all"].active { border-color: var(--text); color: var(--text); }
-    .filter-btn[data-cat="sight"].active { border-color: var(--cat-sight); color: var(--cat-sight); }
-    .filter-btn[data-cat="food"].active  { border-color: var(--cat-food);  color: var(--cat-food); }
-    .filter-btn[data-cat="cafe"].active  { border-color: var(--cat-cafe);  color: var(--cat-cafe); }
-    .filter-btn[data-cat="bar"].active   { border-color: var(--cat-bar);   color: var(--cat-bar); }
+  /* Count badge */
+  #count-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    z-index: 800;
+    pointer-events: none;
+    text-align: center;
+    min-width: 60px;
+  }
+  #count-badge strong { display: block; font-size: 1.1rem; color: var(--text); font-weight: 500; }
 
-    /* Location button */
-    #locate-btn {
-      padding: 7px 14px;
-      border-radius: 20px;
-      border: 1.5px solid var(--accent);
-      background: transparent;
-      color: var(--accent);
-      font-family: "DM Sans", sans-serif;
-      font-size: 0.72rem;
-      font-weight: 500;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-    #locate-btn:hover { background: var(--accent); color: white; }
-    #locate-btn.locating { animation: pulse 1s infinite; }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  /* Legend */
+  #legend {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    z-index: 800;
+    font-size: 0.7rem;
+    line-height: 2;
+    pointer-events: none;
+  }
+  .leg-item { display: flex; align-items: center; gap: 7px; }
+  .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-    /* Map */
-    #map-wrap { flex: 1; position: relative; overflow: hidden; }
-#map { position: absolute; inset: 0; }
+  /* Drawer */
+  #drawer {
+    flex-shrink: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    max-height: 280px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    position: relative;
+  }
+  #drawer.collapsed { max-height: 0; overflow: hidden; }
+  #drawer-content { padding: 16px 20px 22px; }
+  #drawer-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 3px;
+    padding-right: 28px;
+  }
+  #drawer-meta {
+    font-size: 0.72rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  #drawer-notes {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: #d0c9bf;
+    margin-bottom: 14px;
+  }
+  #drawer-close {
+    position: absolute;
+    right: 16px; top: 14px;
+    background: none; border: none;
+    color: var(--muted); font-size: 1.1rem;
+    cursor: pointer; line-height: 1;
+  }
+  #drawer-close:hover { color: var(--text); }
 
-    /* Bottom drawer */
-    #drawer {
-      flex-shrink: 0;
-      background: var(--card);
-      border-top: 1px solid var(--border);
-      max-height: 220px;
-      overflow-y: auto;
-      transition: max-height 0.3s ease;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
-    #drawer.collapsed { max-height: 0; }
+  /* Action buttons */
+  #drawer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-    #drawer-content { padding: 16px 20px; }
-    #drawer-title {
-      font-family: "Playfair Display", serif;
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    #drawer-meta {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-    #drawer-notes {
-      font-size: 0.82rem;
-      line-height: 1.5;
-      color: #d0c9bf;
-    }
-    #drawer-close {
-      position: absolute;
-      right: 16px;
-      top: 12px;
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 1.1rem;
-      cursor: pointer;
-      line-height: 1;
-    }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* Leaflet popup styling */
-    .leaflet-popup-content-wrapper {
-      background: var(--card) !important;
-      border: 1px solid var(--border) !important;
-      border-radius: 12px !important;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
-      color: var(--text) !important;
-      font-family: "DM Sans", sans-serif !important;
-    }
-    .leaflet-popup-tip { background: var(--card) !important; }
-    .leaflet-popup-content { margin: 12px 16px !important; min-width: 180px; }
-    .popup-name {
-      font-family: "Playfair Display", serif;
-      font-size: 0.9rem;
-      font-weight: 700;
-      margin-bottom: 3px;
-    }
-    .popup-cat {
-      font-size: 0.68rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 6px;
-      opacity: 0.6;
-    }
-    .popup-note {
-      font-size: 0.75rem;
-      line-height: 1.4;
-      color: #c0b8ae;
-    }
+  .action-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .action-btn.primary:hover { background: #cf501c; border-color: #cf501c; color: white; }
 
-    /* Legend */
-    #legend {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 14px;
-  z-index: 800;
-  font-size: 0.7rem;
-  line-height: 2;
-  pointer-events: none;
-}
+  .action-btn.routing {
+    background: rgba(232,98,42,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 
-    .leg-item { display: flex; align-items: center; gap: 7px; }
-    .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  /* Hide default LRM panel */
+  .leaflet-routing-container { display: none !important; }
 
-    /* Count badge */
-    #count-badge {
-      position: absolute;
-      top: 70px;
-      right: 12px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 0.7rem;
-      color: var(--muted);
-      z-index: 800;
-      pointer-events: none;
-      text-align: center;
-      min-width: 60px;
-    }
-    #count-badge strong { display: block; font-size: 1.1rem; color: var(--text); font-weight: 500; }
+  /* Popup */
+  .leaflet-popup-content-wrapper {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+    color: var(--text) !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  .leaflet-popup-tip { background: var(--card) !important; }
+  .leaflet-popup-content { margin: 12px 16px !important; min-width: 160px; }
+  .popup-name { font-family:'Playfair Display',serif; font-size:0.88rem; font-weight:700; margin-bottom:2px; }
+  .popup-cat  { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:5px; opacity:0.6; }
+  .popup-note { font-size:0.74rem; line-height:1.4; color:#c0b8ae; }
 
-    /* Relative map wrapper */
-    #map-wrap { flex: 1; position: relative; overflow: hidden; }
-
-    @media (max-width: 480px) {
-      #header h1 { font-size: 1.05rem; }
-      #header { padding: 10px 14px; }
-    }
-#subtitle {
-  font-size: 0.7rem;
-  color: var(--muted);
-  margin-top: -6px;
-}
-#devina-credit {
-  position: absolute;
-  bottom: -36px;   /* align with legend bottom */
-  left: 16px;
-  transform: translateY(-110%);  /* move up exactly its own height */
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 0.65rem;
-  color: var(--muted);
-  z-index: 11801;   /* ensure it's above legend */
-  letter-spacing: 0.04em;
-  pointer-events: none;
-  </style>
+  @media (max-width: 480px) {
+    #header h1 { font-size: 1.05rem; }
+    #header { padding: 10px 14px; }
+  }
+</style>
 </head>
-
 <body>
-  <div id="header">
-    <h1>BCN <span>Explorer</span></h1>
 
+<div id="header">
+  <h1>BCN <span>Explorer</span></h1>
+  <div id="filters">
+    <button class="filter-btn active" data-cat="all">All</button>
+    <button class="filter-btn" data-cat="sight">🏛 Sights</button>
+    <button class="filter-btn" data-cat="food">🍽 Food</button>
+    <button class="filter-btn" data-cat="cafe">☕ Cafés</button>
+    <button class="filter-btn" data-cat="bar">🍹 Bars</button>
+  </div>
+  <button id="locate-btn" onclick="locateMe()">📍 Me</button>
+</div>
 
-    <div id="filters">
-      <button class="filter-btn active" data-cat="all">All</button>
-      <button class="filter-btn" data-cat="sight">🏛 Sights</button>
-      <button class="filter-btn" data-cat="food">🍽 Food</button>
-      <button class="filter-btn" data-cat="cafe">☕ Cafés</button>
-      <button class="filter-btn" data-cat="bar">🍹 Bars</button>
-    </div>
+<div id="map-wrap">
+  <div id="map"></div>
 
-    <button id="locate-btn" type="button">📍 Me</button>
+  <div id="route-info">
+    <span id="route-info-text">Calculating…</span>
+    <button id="route-cancel" onclick="clearRoute()" title="Cancel route">✕</button>
   </div>
 
-  <div id="map-wrap">
-    <div id="map"></div>
-<div id="devina-credit">Devina’s reccos 💛</div>
-    <div id="legend">
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-you)"></div>You</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-sight)"></div>Sights</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-food)"></div>Food</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-cafe)"></div>Café</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cat-bar)"></div>Bars</div>
-    </div>
-
-    <div id="count-badge">
-      <strong id="count-num">—</strong>
-      places
-    </div>
+  <div id="count-badge">
+    <strong id="count-num">—</strong>
+    places
   </div>
 
-  <div id="drawer" class="collapsed" style="position:relative;">
-    <button id="drawer-close" type="button">✕</button>
-    <div id="drawer-content">
-      <div id="drawer-title"></div>
-      <div id="drawer-meta"></div>
-      <div id="drawer-notes"></div>
-    </div>
+  <div id="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-you)"></div>You</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#ff7f7f"></div>Hotel</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-sight)"></div>Sights</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-food)"></div>Food</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-cafe)"></div>Café</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--cat-bar)"></div>Bars</div>
   </div>
+</div>
 
-  <script>
-    // ─── MAP INIT ────────────────────────────────────────────────────────────────
-    const map = L.map("map", {
-      center: [41.385, 2.173],
-      zoom: 14,
-      zoomControl: true,
-    });
+<div id="drawer" class="collapsed">
+  <button id="drawer-close" onclick="closeDrawer()">✕</button>
+  <div id="drawer-content">
+    <div id="drawer-title"></div>
+    <div id="drawer-meta"></div>
+    <div id="drawer-notes"></div>
+    <div id="drawer-actions"></div>
+  </div>
+</div>
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: "© OpenStreetMap contributors © CARTO",
-      subdomains: "abcd",
-      maxZoom: 20
-    }).addTo(map);
+<script>
+// ── MAP INIT ──────────────────────────────────────────────────────────────────
+const map = L.map('map', { center:[41.385,2.173], zoom:14, zoomControl:true });
 
-    // ─── DATA ───────────────────────────────────────────────────────────────────
-    const places = [
-      // SIGHTS
-      { cat:"sight", name:"Sagrada Família", lat:41.4036, lng:2.1744, emoji:"⛪", note:"Book tickets 2 weeks ahead! Open 9am–6pm." },
-      { cat:"sight", name:"Park Güell", lat:41.4145, lng:2.1527, emoji:"🌿", note:"Combine with Carmel del Bunkers — same area. Open 9am–8pm." },
-      { cat:"sight", name:"Carmel del Bunkers", lat:41.4193, lng:2.1618, emoji:"🔭", note:"360° panoramic views of all Barcelona. Best at sunset. Free entry." },
-      { cat:"sight", name:"Cathedral of Barcelona", lat:41.3840, lng:2.1762, emoji:"⛪", note:"Gothic Quarter gem. Cloister with geese unmissable. Open 9:30am." },
-      { cat:"sight", name:"Arc de Triomf", lat:41.3911, lng:2.1806, emoji:"🏛", note:"Free & open 24/7. Walk promenade down to Ciutadella. Best at golden hour." },
-      { cat:"sight", name:"Parc de la Ciutadella", lat:41.3881, lng:2.1860, emoji:"🌳", note:"Lovely park with spectacular fountain. Zoo & botanical garden inside." },
-      { cat:"sight", name:"Casa Milà (La Pedrera)", lat:41.3952, lng:2.1619, emoji:"🏠", note:"Open 9am–11pm. Rooftop incredible. Book ahead. Pair with Casa Batllò." },
-      { cat:"sight", name:"Casa Batllò", lat:41.3917, lng:2.1649, emoji:"🏠", note:"Open 8:30am–10:30pm. Magic at night too. On Passeig de Gràcia." },
-      { cat:"sight", name:"Montjuïc Castle", lat:41.3630, lng:2.1651, emoji:"🏰", note:"Take cable car up. Olympic stadium & Jardins de Laribal nearby. Great half-day." },
-      { cat:"sight", name:"La Rambla", lat:41.3856, lng:2.1698, emoji:"🚶", note:"Under renovation but charming. Leads right to Boqueria market." },
-      { cat:"sight", name:"Mercat de la Boqueria", lat:41.3817, lng:2.1716, emoji:"🛒", note:"Go early! Closed Sundays. Touristy but worth the walk." },
-      { cat:"sight", name:"Barceloneta Beach", lat:41.3784, lng:2.1925, emoji:"🏖", note:"February is mild — great for a walk. Opium club is right here." },
-      { cat:"sight", name:"Plaça de Catalunya", lat:41.3870, lng:2.1700, emoji:"🏙", note:"Your hub! Connects La Rambla, Gothic Quarter & Eixample." },
-      { cat:"sight", name:"Plaça Reial", lat:41.3801, lng:2.1754, emoji:"🏟", note:"Beautiful arcaded square. Great for evening drinks." },
-      { cat:"sight", name:"El Born", lat:41.3843, lng:2.1824, emoji:"🏘", note:"Hipster neighbourhood — best for wandering, bars, and restaurants." },
-      { cat:"sight", name:"Gothic Quarter", lat:41.3826, lng:2.1762, emoji:"🏛", note:"Medieval labyrinthine streets. Best explored without a map." },
-      { cat:"sight", name:"Passeig de Gràcia", lat:41.3919, lng:2.1647, emoji:"🛍", note:"High-end shopping + Casa Batllò + Casa Milà all on the same street." },
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'© OpenStreetMap © CARTO', subdomains:'abcd', maxZoom:20
+}).addTo(map);
 
-      // FOOD
-      { cat:"food", name:"La Pepita ⭐ BOOK NOW", lat:41.3980, lng:2.1610, emoji:"🍢", note:"Highly recommended tapas. Reservations essential. Walls covered in writing — great vibe." },
-      { cat:"food", name:"El Nacional", lat:41.3906, lng:2.1684, emoji:"🥘", note:"Multi-restaurant on Passeig de Gràcia. Tapas, steak, seafood. Open noon–midnight." },
-      { cat:"food", name:"Parking Pizza", lat:41.3963, lng:2.1741, emoji:"🍕", note:"Best pizza in Barcelona. Industrial vibe. No reservations — arrive before opening." },
-      { cat:"food", name:"Ugot Bruncherie", lat:41.3813, lng:2.1553, emoji:"🍳", note:"Best brunch/breakfast. Great shakshukas, customizable vegetarian. Open 9am–4pm." },
-      { cat:"food", name:"Honest Greens", lat:41.3835, lng:2.1712, emoji:"🥗", note:"Healthy fast food right on La Rambla. 2 min walk from hotel. 8:30am–10:30pm." },
-      { cat:"food", name:"2254 Restaurant ⭐ BOOK", lat:41.3903, lng:2.1639, emoji:"🍽", note:"Reservations required — book ASAP." },
-      { cat:"food", name:"Viren's ⭐ BOOK", lat:41.3965, lng:2.1618, emoji:"🍽", note:"Reservations required. Book ahead." },
-      { cat:"food", name:"Silan (Middle Eastern)", lat:41.3891, lng:2.1666, emoji:"🧆", note:"Middle Eastern cuisine in Eixample." },
-      { cat:"food", name:"Tapan (Caucasian)", lat:41.3866, lng:2.1604, emoji:"🥙", note:"Unique Caucasian restaurant — different and worth trying." },
-      { cat:"food", name:"Boca Grande", lat:41.3919, lng:2.1639, emoji:"🦐", note:"Seafood & Mediterranean. High-end. Passeig de Gràcia area." },
-      { cat:"food", name:"Da Nanni's Pizza (Gràcia)", lat:41.4003, lng:2.1558, emoji:"🍕", note:"Excellent Neapolitan pizza in the Gràcia neighbourhood." },
-      { cat:"food", name:"Mini Pepita", lat:41.3800, lng:2.1784, emoji:"🥪", note:"Smaller sibling of La Pepita. Gothic Quarter." },
-      { cat:"food", name:"Sesamo (vegetarian)", lat:41.3793, lng:2.1681, emoji:"🌱", note:"Recommended for vegetarians." },
-      { cat:"food", name:"Soma", lat:41.3840, lng:2.1683, emoji:"🍴", note:"Good all-rounder in the centre." },
-      { cat:"food", name:"Pummarola Pizza", lat:41.3882, lng:2.1640, emoji:"🍕", note:"Authentic Neapolitan pizza. Near Eixample." },
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const COLORS = { sight:'#e8622a', food:'#4CAF50', cafe:'#c9a84c', bar:'#9b59b6' };
+const LABELS = { sight:'🏛 Sights', food:'🍽 Food', cafe:'☕ Café', bar:'🍹 Bars' };
 
-      // CAFES & DESSERTS
-      { cat:"cafe", name:"Brunells ☕ (hot choc + croissant)", lat:41.3854, lng:2.1807, emoji:"🥐", note:"Best croissant in Barcelona. In El Born. Go for breakfast. 9am–8pm daily." },
-      { cat:"cafe", name:"Departure Coffee", lat:41.3836, lng:2.1649, emoji:"☕", note:"Specialty coffee, great dirty chai. Near La Rambla. 9am–6:30pm (closed Sun)." },
-      { cat:"cafe", name:"Cafe Amatller (hot choc)", lat:41.3914, lng:2.1649, emoji:"🍫", note:"Best hot chocolate in Barcelona. Inside Modernisme Casa Amatller next to Casa Batllò." },
-      { cat:"cafe", name:"La Papa (breakfast)", lat:41.3826, lng:2.1672, emoji:"🥚", note:"Highly recommended for breakfast. Raval neighbourhood." },
-      { cat:"cafe", name:"Dorigen Coffee", lat:41.3839, lng:2.1616, emoji:"☕", note:"Specialty coffee. Raval/Gothic area." },
-      { cat:"cafe", name:"Alice's Secret Garden", lat:41.3921, lng:2.1566, emoji:"🌸", note:"Charming garden cafe. Eixample area." },
-      { cat:"cafe", name:"Nudes Cafe", lat:41.3878, lng:2.1598, emoji:"☕", note:"Trendy cafe with good food. Eixample." },
-      { cat:"cafe", name:"Lamalva", lat:41.3815, lng:2.1769, emoji:"🌿", note:"Gothic Quarter cafe." },
-      { cat:"cafe", name:"Joncakes (dessert)", lat:41.3871, lng:2.1596, emoji:"🎂", note:"Excellent cakes and pastries." },
-      { cat:"cafe", name:"Caju Gelato", lat:41.3855, lng:2.1744, emoji:"🍦", note:"Great gelato near Plaça Catalunya." },
-      { cat:"cafe", name:"Paralelo Gelato", lat:41.3735, lng:2.1614, emoji:"🍦", note:"Gelato near Paralelo." },
-      { cat:"cafe", name:"Churros + Hot Chocolate", lat:41.3808, lng:2.1756, emoji:"🥐", note:"Classic Barcelona churros spot. Gothic Quarter." },
+const places = [
+  // SIGHTS
+  { cat:'sight', name:'Sagrada Família',         lat:41.4036, lng:2.1744, emoji:'⛪', note:'Book tickets 2 weeks ahead! Open 9am–6pm.' },
+  { cat:'sight', name:'Park Güell',              lat:41.4145, lng:2.1527, emoji:'🌿', note:'Combine with Carmel del Bunkers same afternoon. Open 9am–8pm.' },
+  { cat:'sight', name:'Carmel del Bunkers',      lat:41.4193, lng:2.1618, emoji:'🔭', note:'360° panoramic views. Best at sunset. Free entry.' },
+  { cat:'sight', name:'Cathedral of Barcelona',  lat:41.3840, lng:2.1762, emoji:'⛪', note:'Gothic Quarter gem. Cloister with geese unmissable. Open 9:30am.' },
+  { cat:'sight', name:'Arc de Triomf',           lat:41.3911, lng:2.1806, emoji:'🏛', note:'Free & open 24/7. Walk promenade to Ciutadella. Golden hour 🔥' },
+  { cat:'sight', name:'Parc de la Ciutadella',   lat:41.3881, lng:2.1860, emoji:'🌳', note:'Spectacular fountain. Zoo & botanical garden inside.' },
+  { cat:'sight', name:'Casa Milà (La Pedrera)',  lat:41.3952, lng:2.1619, emoji:'🏠', note:'Open 9am–11pm. Rooftop incredible. Book ahead.' },
+  { cat:'sight', name:'Casa Batllò',             lat:41.3917, lng:2.1649, emoji:'🏠', note:'Open 8:30am–10:30pm. Magical at night. On Passeig de Gràcia.' },
+  { cat:'sight', name:'Montjuïc Castle',         lat:41.3630, lng:2.1651, emoji:'🏰', note:'Take cable car up. Olympic stadium & Jardins nearby. Great half-day.' },
+  { cat:'sight', name:'La Rambla',               lat:41.3856, lng:2.1698, emoji:'🚶', note:'Under renovation but charming. Leads to Boqueria market.' },
+  { cat:'sight', name:'Mercat de la Boqueria',   lat:41.3817, lng:2.1716, emoji:'🛒', note:'Go early! Closed Sundays.' },
+  { cat:'sight', name:'Barceloneta Beach',       lat:41.3784, lng:2.1925, emoji:'🏖', note:'Great for a coastal walk. Opium club is right here.' },
+  { cat:'sight', name:'Plaça de Catalunya',      lat:41.3870, lng:2.1700, emoji:'🏙', note:'Your central hub. Connects La Rambla, Gothic Quarter & Eixample.' },
+  { cat:'sight', name:'Plaça Reial',             lat:41.3801, lng:2.1754, emoji:'🏟', note:'Beautiful arcaded square. Great for evening drinks.' },
+  { cat:'sight', name:'El Born',                 lat:41.3843, lng:2.1824, emoji:'🏘', note:'Hipster neighbourhood — bars, restaurants, wandering.' },
+  { cat:'sight', name:'Gothic Quarter',          lat:41.3826, lng:2.1762, emoji:'🏛', note:'Medieval labyrinthine streets. Explore without a plan.' },
+  { cat:'sight', name:'Passeig de Gràcia',       lat:41.3919, lng:2.1647, emoji:'🛍', note:'High-end shopping + Casa Batllò + Casa Milà on one boulevard.' },
+  // FOOD
+  { cat:'food', name:'La Pepita ⭐ BOOK NOW',    lat:41.3980, lng:2.1610, emoji:'🍢', note:'Highly recommended tapas. Reservations essential. Incredible vibe.' },
+  { cat:'food', name:'El Nacional',              lat:41.3906, lng:2.1684, emoji:'🥘', note:'Multi-restaurant on Passeig de Gràcia. Tapas, steak, seafood. Noon–midnight.' },
+  { cat:'food', name:'Parking Pizza',            lat:41.3963, lng:2.1741, emoji:'🍕', note:'Best pizza in Barcelona. Industrial vibe. No reservations.' },
+  { cat:'food', name:'Ugot Bruncherie',          lat:41.3813, lng:2.1553, emoji:'🍳', note:'Best brunch/breakfast. Great shakshukas. Open 9am–4pm.' },
+  { cat:'food', name:'Honest Greens',            lat:41.3835, lng:2.1712, emoji:'🥗', note:'Healthy fast food on La Rambla. 2 min walk from hotel.' },
+  { cat:'food', name:'2254 Restaurant ⭐ BOOK',  lat:41.3903, lng:2.1639, emoji:'🍽', note:'Reservations required — book ASAP.' },
+  { cat:'food', name:"Viren's ⭐ BOOK",          lat:41.3965, lng:2.1618, emoji:'🍽', note:'Reservations required. Book ahead.' },
+  { cat:'food', name:'Silan (Middle Eastern)',   lat:41.3891, lng:2.1666, emoji:'🧆', note:'Middle Eastern cuisine in Eixample.' },
+  { cat:'food', name:'Tapan (Caucasian)',        lat:41.3866, lng:2.1604, emoji:'🥙', note:'Unique Caucasian restaurant — worth trying.' },
+  { cat:'food', name:'Boca Grande',              lat:41.3919, lng:2.1639, emoji:'🦐', note:'Seafood & Mediterranean. High-end. Passeig de Gràcia.' },
+  { cat:'food', name:"Da Nanni's Pizza",         lat:41.4003, lng:2.1558, emoji:'🍕', note:'Excellent Neapolitan pizza in Gràcia.' },
+  { cat:'food', name:'Sesamo (vegetarian)',      lat:41.3793, lng:2.1681, emoji:'🌱', note:'Recommended for vegetarians.' },
+  { cat:'food', name:'Soma',                     lat:41.3840, lng:2.1683, emoji:'🍴', note:'Good all-rounder in the centre.' },
+  { cat:'food', name:'Pummarola Pizza',          lat:41.3882, lng:2.1640, emoji:'🍕', note:'Authentic Neapolitan pizza near Eixample.' },
+  // CAFES
+  { cat:'cafe', name:'Brunells (hot choc + croissant)', lat:41.3854, lng:2.1807, emoji:'🥐', note:'Best croissant in Barcelona. El Born. 9am–8pm daily.' },
+  { cat:'cafe', name:'Departure Coffee',         lat:41.3836, lng:2.1649, emoji:'☕', note:'Specialty coffee, great dirty chai. Near La Rambla. 9am–6:30pm (closed Sun).' },
+  { cat:'cafe', name:'Cafe Amatller (hot choc)', lat:41.3914, lng:2.1649, emoji:'🍫', note:'Best hot chocolate in BCN. Inside Casa Amatller next to Casa Batllò.' },
+  { cat:'cafe', name:'La Papa (breakfast)',      lat:41.3826, lng:2.1672, emoji:'🥚', note:'Highly recommended for breakfast. Raval neighbourhood.' },
+  { cat:'cafe', name:'Dorigen Coffee',           lat:41.3839, lng:2.1616, emoji:'☕', note:'Specialty coffee. Raval/Gothic area.' },
+  { cat:'cafe', name:"Alice's Secret Garden",   lat:41.3921, lng:2.1566, emoji:'🌸', note:'Charming garden cafe. Eixample.' },
+  { cat:'cafe', name:'Nudes Cafe',               lat:41.3878, lng:2.1598, emoji:'☕', note:'Trendy cafe with good food. Eixample.' },
+  { cat:'cafe', name:'Lamalva',                  lat:41.3815, lng:2.1769, emoji:'🌿', note:'Gothic Quarter cafe.' },
+  { cat:'cafe', name:'Joncakes (dessert)',       lat:41.3871, lng:2.1596, emoji:'🎂', note:'Excellent cakes and pastries.' },
+  { cat:'cafe', name:'Caju Gelato',              lat:41.3855, lng:2.1744, emoji:'🍦', note:'Great gelato near Plaça Catalunya.' },
+  { cat:'cafe', name:'Paralelo Gelato',          lat:41.3735, lng:2.1614, emoji:'🍦', note:'Gelato spot near Paralelo.' },
+  { cat:'cafe', name:'Churros + Hot Chocolate',  lat:41.3808, lng:2.1756, emoji:'🥐', note:'Classic Barcelona churros. Gothic Quarter.' },
+  // BARS
+  { cat:'bar', name:'Paradiso 🍹 (World Top 5)', lat:41.3837, lng:2.1837, emoji:'🚪', note:'Hidden behind fridge door in El Born. Open from 5pm. Go before 8pm.' },
+  { cat:'bar', name:'Dr. Stravinsky',            lat:41.3842, lng:2.1807, emoji:'🧪', note:'Apothecary-themed cocktail bar. El Born. Open from 5pm.' },
+  { cat:'bar', name:'Supermercat (Speakeasy)',   lat:41.3806, lng:2.1802, emoji:'🛒', note:'Hidden bar in a fake supermarket. Gothic Quarter. Wed–Sun 7pm.' },
+  { cat:'bar', name:"Bobby's Free (Speakeasy)",  lat:41.3899, lng:2.1707, emoji:'💈', note:"Barber shop entrance. Say the secret word. Daily 7pm–3am." },
+  { cat:'bar', name:'Sips 🍸 (World #1)',        lat:41.3889, lng:2.1568, emoji:'🍸', note:'Rated #1 cocktail bar in the world. Tue–Sat 6:30pm–2am.' },
+  { cat:'bar', name:'Monk (Speakeasy)',          lat:41.3837, lng:2.1745, emoji:'🎩', note:'Gothic Quarter speakeasy. Look up entrance before going.' },
+  { cat:'bar', name:'Razzmatazz',               lat:41.3977, lng:2.1911, emoji:'🎵', note:'Best big club in BCN. 5 rooms. Thu–Sun from 12:30am.' },
+  { cat:'bar', name:'Opium (beach club)',       lat:41.3853, lng:2.1968, emoji:'🌊', note:'On Barceloneta beach. Open till 5–6am.' },
+  { cat:'bar', name:'Boca Chica',               lat:41.3893, lng:2.1670, emoji:'🎶', note:'Lively bar. Eixample/Passeig de Gràcia.' },
+  { cat:'bar', name:'Craft Barcelona (Live)',   lat:41.3901, lng:2.1672, emoji:'🎸', note:'Live music bar.' },
+  { cat:'bar', name:'Rosa Negro',               lat:41.3892, lng:2.1659, emoji:'🌹', note:'Trendy bar in Eixample.' },
+  { cat:'bar', name:'Sub Rosa',                 lat:41.3895, lng:2.1655, emoji:'🔮', note:'Intimate cocktail bar.' },
+  { cat:'bar', name:'Marlowe Bar',              lat:41.3829, lng:2.1795, emoji:'🎩', note:'Great cocktail bar. El Born.' },
+  { cat:'bar', name:"Bobby's Gin",              lat:41.3897, lng:2.1710, emoji:'🍸', note:"Excellent gin selection. Near Bobby's Free." },
+  { cat:'bar', name:'Slow Club',                lat:41.3925, lng:2.1602, emoji:'🎷', note:'Chilled intimate club. Eixample.' },
+  { cat:'bar', name:'Nevermind',                lat:41.3783, lng:2.1673, emoji:'🎵', note:'Raval area bar/club.' },
+  { cat:'bar', name:'Bornet',                   lat:41.3854, lng:2.1831, emoji:'🍺', note:'Cozy bar in El Born.' },
+  { cat:'bar', name:'La Whiskeria',             lat:41.3872, lng:2.1647, emoji:'🥃', note:'Whisky bar. Good selection.' },
+];
 
-      // BARS & CLUBS
-      { cat:"bar", name:"Paradiso 🍹 (World Top 5)", lat:41.3837, lng:2.1837, emoji:"🚪", note:"Hidden behind fridge door in El Born. Open from 5pm. Go before 8pm to skip queues." },
-      { cat:"bar", name:"Dr. Stravinsky", lat:41.3842, lng:2.1807, emoji:"🧪", note:"Apothecary-themed cocktail bar. Flavor-mapped menu. El Born. Open from 5pm." },
-      { cat:"bar", name:"Supermercat (Speakeasy)", lat:41.3806, lng:2.1802, emoji:"🛒", note:"Hidden bar disguised as a supermarket. Gothic Quarter. Wed–Sun from 7pm." },
-      { cat:"bar", name:"Bobby's Free (Speakeasy)", lat:41.3899, lng:2.1707, emoji:"💈", note:"Barber shop entrance. Say the secret word. Open daily 7pm–3am." },
-      { cat:"bar", name:"Sips 🍸 (World #1)", lat:41.3889, lng:2.1568, emoji:"🍸", note:"Rated #1 cocktail bar in the world. Tue–Sat 6:30pm–2am. Worth the trip." },
-      { cat:"bar", name:"Monk (Speakeasy)", lat:41.3837, lng:2.1745, emoji:"🎩", note:"Gothic Quarter speakeasy. Look up entrance before going." },
-      { cat:"bar", name:"Razzmatazz", lat:41.3977, lng:2.1911, emoji:"🎵", note:"Best big club in Barcelona. 5 rooms, different music. Thu–Sun from 12:30am." },
-      { cat:"bar", name:"Opium (beach club)", lat:41.3853, lng:2.1968, emoji:"🌊", note:"Right on Barceloneta beach. Open till 5–6am. Great beach club night." },
-      { cat:"bar", name:"Boca Chica", lat:41.3893, lng:2.1670, emoji:"🎶", note:"Lively bar. Eixample/Passeig de Gràcia area." },
-      { cat:"bar", name:"Craft Barcelona (Live Music)", lat:41.3901, lng:2.1672, emoji:"🎸", note:"Live music bar. Great atmosphere." },
-      { cat:"bar", name:"Rosa Negro", lat:41.3892, lng:2.1659, emoji:"🌹", note:"Trendy bar in Eixample." },
-      { cat:"bar", name:"Sub Rosa", lat:41.3895, lng:2.1655, emoji:"🔮", note:"Intimate cocktail bar." },
-      { cat:"bar", name:"Marlowe Bar", lat:41.3829, lng:2.1795, emoji:"🎩", note:"Great cocktail bar. El Born." },
-      { cat:"bar", name:"Ice Barcelona", lat:41.3890, lng:2.1652, emoji:"🧊", note:"Ice bar experience." },
-      { cat:"bar", name:"Bobby's Gin", lat:41.3897, lng:2.1710, emoji:"🍸", note:"Excellent gin selection. Near Bobby's Free." },
-      { cat:"bar", name:"Slow Club", lat:41.3925, lng:2.1602, emoji:"🎷", note:"More chilled/intimate club vibe. Eixample." },
-      { cat:"bar", name:"Nevermind", lat:41.3783, lng:2.1673, emoji:"🎵", note:"Raval area bar/club." },
-      { cat:"bar", name:"Bornet", lat:41.3854, lng:2.1831, emoji:"🍺", note:"Cozy bar in El Born." },
-      { cat:"bar", name:"La Whiskeria", lat:41.3872, lng:2.1647, emoji:"🥃", note:"Whisky bar. Good selection." },
-    ];
+const HOTEL = { lat:41.3811, lng:2.1728, name:'Catalunya La Rambla' };
 
-    // ─── HOTEL ────────────────────────────────────────────────────────────────
-    const HOTEL = { lat: 41.3811, lng: 2.1728, name: "Catalunya La Rambla (Your Hotel)" };
+// ── ICON FACTORY ──────────────────────────────────────────────────────────────
+function makeIcon(color, emoji, size=32) {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2px solid rgba(255,255,255,0.35);box-shadow:0 3px 12px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:${Math.round(size*0.38)}px;line-height:1">${emoji}</span></div>`,
+    iconSize:[size,size], iconAnchor:[size/2,size], popupAnchor:[0,-(size+4)]
+  });
+}
 
-    // ─── COLORS / LABELS ───────────────────────────────────────────────────────
-    const COLORS = {
-      sight: "#e8622a",
-      food:  "#4CAF50",
-      cafe:  "#c9a84c",
-      bar:   "#9b59b6",
-      you:   "#00bcd4",
-      hotel: "#ff7f7f"
-    };
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let markers=[], userMarker=null, hotelMarker=null, accuracyCircle=null;
+let watchId=null, routeControl=null, activeFilter='all', userLatLng=null, activePlace=null;
+let isRouting=false;
 
-    const LABELS = {
-      sight: "🏛 Sights",
-      food:  "🍽 Food",
-      cafe:  "☕ Café",
-      bar:   "🍹 Bars"
-    };
+// ── HOTEL ─────────────────────────────────────────────────────────────────────
+hotelMarker = L.marker([HOTEL.lat, HOTEL.lng], { icon: makeIcon('#ff7f7f','🏨',30), zIndexOffset:500 })
+  .bindPopup('<div class="popup-name">🏨 Your Hotel</div><div class="popup-note">Catalunya La Rambla — Las Ramblas</div>')
+  .addTo(map);
+hotelMarker.on('click', () => showDrawerStatic('🏨 Your Hotel','Home base','Catalunya La Rambla — right on Las Ramblas. Plaça Catalunya is 2 min walk.'));
 
-    // ─── MARKER FACTORY ───────────────────────────────────────────────────────
-    function makeIcon(color, emoji, size = 32) {
-      return L.divIcon({
-        className: "",
-        html: `
-          <div style="
-            width:${size}px;height:${size}px;
-            border-radius:50% 50% 50% 0;
-            transform:rotate(-45deg);
-            background:${color};
-            border:2px solid rgba(255,255,255,0.4);
-            box-shadow:0 3px 12px rgba(0,0,0,0.5);
-            display:flex;align-items:center;justify-content:center;">
-            <span style="transform:rotate(45deg);font-size:${Math.round(size * 0.4)}px">${emoji}</span>
-          </div>`,
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size],
-        popupAnchor: [0, -(size + 4)]
-      });
+// ── MARKERS ───────────────────────────────────────────────────────────────────
+function addMarkers(filter='all') {
+  markers.forEach(({marker}) => map.removeLayer(marker));
+  markers=[];
+  const visible = filter==='all' ? places : places.filter(p=>p.cat===filter);
+  visible.forEach(p => {
+    const m = L.marker([p.lat,p.lng], { icon: makeIcon(COLORS[p.cat], p.emoji) });
+    m.bindPopup(`<div class="popup-name">${p.name}</div><div class="popup-cat" style="color:${COLORS[p.cat]}">${LABELS[p.cat]}</div><div class="popup-note">${p.note}</div>`,{maxWidth:240});
+    m.on('click', ()=>{ activePlace=p; showDrawer(p); });
+    m.addTo(map);
+    markers.push({marker:m, place:p});
+  });
+  document.getElementById('count-num').textContent = visible.length;
+}
+addMarkers();
+
+// ── FILTERS ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter=btn.dataset.cat;
+    addMarkers(activeFilter);
+    closeDrawer();
+  });
+});
+
+// ── GEOLOCATION ───────────────────────────────────────────────────────────────
+function locateMe() {
+  const btn = document.getElementById('locate-btn');
+  if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
+  btn.textContent='📍 …'; btn.classList.add('locating');
+
+  navigator.geolocation.getCurrentPosition(pos=>{
+    btn.textContent='📍 Me'; btn.classList.remove('locating');
+    applyPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+    map.flyTo([pos.coords.latitude, pos.coords.longitude], 15, {duration:1.5});
+
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    watchId = navigator.geolocation.watchPosition(p2=>{
+      applyPosition(p2.coords.latitude, p2.coords.longitude, p2.coords.accuracy);
+    }, null, {enableHighAccuracy:true});
+
+  }, err=>{
+    btn.textContent='📍 Me'; btn.classList.remove('locating');
+    if (err.code===1) alert('Allow location access and try again.');
+    else alert('Could not get location. Try again.');
+  }, {enableHighAccuracy:true, timeout:12000});
+}
+
+function applyPosition(lat, lng, accuracy) {
+  userLatLng = L.latLng(lat, lng);
+
+  if (accuracyCircle) map.removeLayer(accuracyCircle);
+  accuracyCircle = L.circle([lat,lng],{
+    radius:accuracy, color:'#00bcd4', fillColor:'#00bcd4',
+    fillOpacity:0.08, weight:1, dashArray:'4 4'
+  }).addTo(map);
+
+  if (userMarker) { userMarker.setLatLng([lat,lng]); }
+  else {
+    userMarker = L.marker([lat,lng], {
+      icon: L.divIcon({
+        className:'',
+        html:`<div style="width:18px;height:18px;border-radius:50%;background:#00bcd4;border:3px solid white;box-shadow:0 0 0 5px rgba(0,188,212,0.25),0 3px 10px rgba(0,0,0,0.4);"></div>`,
+        iconSize:[18,18], iconAnchor:[9,9]
+      }),
+      zIndexOffset:1000
+    }).bindPopup('<div class="popup-name">📍 You are here</div>').addTo(map);
+  }
+
+  // Live reroute if route is active
+  if (routeControl && activePlace) {
+    routeControl.setWaypoints([userLatLng, L.latLng(activePlace.lat, activePlace.lng)]);
+  }
+}
+
+// ── ROUTING ───────────────────────────────────────────────────────────────────
+function startRoute(place) {
+  if (!userLatLng) {
+    if (confirm('Tap OK then "📍 Me" to get your location, then try routing again.')) {
+      closeDrawer();
     }
+    return;
+  }
+  clearRoute(false);
+  isRouting=true;
 
-    // ─── MARKERS ──────────────────────────────────────────────────────────────
-    let markers = [];
-    let userMarker = null;
-    let hotelMarker = null;
-    let activeFilter = "all";
+  routeControl = L.Routing.control({
+    waypoints: [userLatLng, L.latLng(place.lat, place.lng)],
+    router: L.Routing.osrmv1({
+      serviceUrl:'https://router.project-osrm.org/route/v1',
+      profile:'foot'
+    }),
+    lineOptions:{
+      styles:[
+        {color:'#e8622a', opacity:0.12, weight:12},
+        {color:'#e8622a', opacity:1,    weight:3.5, dashArray:'10 7'}
+      ],
+      addWaypoints:false
+    },
+    createMarker:()=>null,
+    fitSelectedRoutes:true,
+    show:false,
+    collapsible:false
+  }).addTo(map);
 
-    function addMarkers(filter = "all") {
-      markers.forEach(({ marker }) => map.removeLayer(marker));
-      markers = [];
+  // Show pill
+  const ri = document.getElementById('route-info');
+  document.getElementById('route-info-text').innerHTML = `Calculating route to <strong>${place.name}</strong>…`;
+  ri.classList.add('visible');
 
-      const visible = filter === "all" ? places : places.filter(p => p.cat === filter);
+  routeControl.on('routesfound', e=>{
+    const s = e.routes[0].summary;
+    const dist = s.totalDistance>=1000
+      ? (s.totalDistance/1000).toFixed(1)+' km'
+      : Math.round(s.totalDistance)+' m';
+    const mins = Math.ceil(s.totalTime/60);
+    document.getElementById('route-info-text').innerHTML =
+      `🚶 <strong>${mins} min</strong> · ${dist} · ${place.name}`;
+  });
 
-      visible.forEach(p => {
-        const m = L.marker([p.lat, p.lng], { icon: makeIcon(COLORS[p.cat], p.emoji) });
+  routeControl.on('routingerror', ()=>{
+    document.getElementById('route-info-text').innerHTML='⚠️ Could not calculate route. Check your internet.';
+  });
 
-        m.bindPopup(`
-          <div class="popup-name">${p.name}</div>
-          <div class="popup-cat" style="color:${COLORS[p.cat]}">${LABELS[p.cat] || p.cat}</div>
-          <div class="popup-note">${p.note}</div>
-        `, { maxWidth: 240 });
+  renderActions(place);
+}
 
-        m.on("click", () => showDrawer(p));
-        m.addTo(map);
-        markers.push({ marker: m, place: p });
-      });
+function clearRoute(updateUI=true) {
+  if (routeControl) { map.removeControl(routeControl); routeControl=null; }
+  isRouting=false;
+  if (updateUI) {
+    document.getElementById('route-info').classList.remove('visible');
+    if (activePlace) renderActions(activePlace);
+  }
+}
 
-      document.getElementById("count-num").textContent = visible.length;
-    }
+// ── GOOGLE MAPS ───────────────────────────────────────────────────────────────
+function openGoogleMaps(place) {
+  const origin = userLatLng
+    ? `${userLatLng.lat},${userLatLng.lng}`
+    : `${HOTEL.lat},${HOTEL.lng}`;
+  const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${place.lat},${place.lng}&travelmode=walking`;
+  window.open(url, '_blank');
+}
 
-    // Hotel marker (always visible)
-    function addHotelMarker() {
-      hotelMarker = L.marker([HOTEL.lat, HOTEL.lng], {
-        icon: makeIcon(COLORS.hotel, "🏨", 30),
-        zIndexOffset: 500
-      })
-      .bindPopup(`<div class="popup-name">🏨 Your Hotel</div><div class="popup-note">Catalunya La Rambla</div>`)
-      .addTo(map);
-    }
+// ── DRAWER ────────────────────────────────────────────────────────────────────
+function showDrawer(p) {
+  activePlace=p;
+  document.getElementById('drawer-title').textContent = p.name;
+  document.getElementById('drawer-meta').innerHTML = `<span style="color:${COLORS[p.cat]}">${LABELS[p.cat]}</span>`;
+  document.getElementById('drawer-notes').textContent = p.note;
+  renderActions(p);
+  document.getElementById('drawer').classList.remove('collapsed');
+}
 
-    addHotelMarker();
-    addMarkers();
+function showDrawerStatic(title, metaText, noteText) {
+  activePlace=null;
+  document.getElementById('drawer-title').textContent = title;
+  document.getElementById('drawer-meta').innerHTML = `<span style="color:#ff7f7f">${metaText}</span>`;
+  document.getElementById('drawer-notes').textContent = noteText;
+  document.getElementById('drawer-actions').innerHTML='';
+  document.getElementById('drawer').classList.remove('collapsed');
+}
 
-    // ─── FILTER LOGIC ─────────────────────────────────────────────────────────
-    document.querySelectorAll(".filter-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        activeFilter = btn.dataset.cat;
-        addMarkers(activeFilter);
-        closeDrawer();
-      });
-    });
+function renderActions(p) {
+  const actions = document.getElementById('drawer-actions');
+  const routeClass = isRouting ? 'action-btn routing' : 'action-btn';
+  const routeLabel = isRouting ? '✕ Cancel Route' : '🗺 Route on Map';
+  actions.innerHTML = `
+    <button class="${routeClass}" onclick="toggleRoute()">
+      <span>${routeLabel}</span>
+    </button>
+    <button class="action-btn primary" onclick="handleGMaps()">
+      <span>↗ Google Maps</span>
+    </button>
+  `;
+}
 
-    // ─── GEOLOCATION ──────────────────────────────────────────────────────────
-    let watchId = null;
-    let accuracyCircle = null;
+function toggleRoute() {
+  if (!activePlace) return;
+  if (isRouting) clearRoute(true);
+  else startRoute(activePlace);
+}
 
-    function locateMe() {
-      const btn = document.getElementById("locate-btn");
+function handleGMaps() {
+  if (activePlace) openGoogleMaps(activePlace);
+}
 
-      if (!navigator.geolocation) {
-        alert("Geolocation not supported by your browser.");
-        return;
-      }
+function closeDrawer() {
+  document.getElementById('drawer').classList.add('collapsed');
+}
 
-      btn.textContent = "📍 ...";
-      btn.classList.add("locating");
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-
-          btn.textContent = "📍 Me";
-          btn.classList.remove("locating");
-
-          if (userMarker) map.removeLayer(userMarker);
-          if (accuracyCircle) map.removeLayer(accuracyCircle);
-
-          accuracyCircle = L.circle([lat, lng], {
-            radius: accuracy,
-            color: COLORS.you,
-            fillColor: COLORS.you,
-            fillOpacity: 0.08,
-            weight: 1,
-            dashArray: "4 4"
-          }).addTo(map);
-
-          userMarker = L.marker([lat, lng], {
-            icon: L.divIcon({
-              className: "",
-              html: `
-                <div style="
-                  width:20px;height:20px;border-radius:50%;
-                  background:${COLORS.you};border:3px solid white;
-                  box-shadow:0 0 0 6px rgba(0,188,212,0.3), 0 3px 10px rgba(0,0,0,0.4);
-                  animation:youPulse 1.5s infinite;">
-                </div>
-                <style>
-                  @keyframes youPulse {
-                    0%,100% { box-shadow:0 0 0 4px rgba(0,188,212,0.3), 0 3px 10px rgba(0,0,0,0.4) }
-                    50%     { box-shadow:0 0 0 10px rgba(0,188,212,0.15), 0 3px 10px rgba(0,0,0,0.4) }
-                  }
-                </style>
-              `,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
-            }),
-            zIndexOffset: 1000
-          })
-          .bindPopup('<div class="popup-name">📍 You are here</div>')
-          .addTo(map);
-
-          map.flyTo([lat, lng], 15, { duration: 1.5 });
-
-          if (watchId) navigator.geolocation.clearWatch(watchId);
-          watchId = navigator.geolocation.watchPosition(
-            (pos2) => {
-              const { latitude: la, longitude: lo, accuracy: acc2 } = pos2.coords;
-              if (userMarker) userMarker.setLatLng([la, lo]);
-              if (accuracyCircle) {
-                accuracyCircle.setLatLng([la, lo]);
-                accuracyCircle.setRadius(acc2);
-              }
-            },
-            null,
-            { enableHighAccuracy: true }
-          );
-        },
-        (err) => {
-          btn.textContent = "📍 Me";
-          btn.classList.remove("locating");
-          if (err.code === 1) alert("Please allow location access and try again.");
-          else alert("Could not get your location. Try again.");
-        },
-        { enableHighAccuracy: true, timeout: 12000 }
-      );
-    }
-
-    // Hook button
-    document.getElementById("locate-btn").addEventListener("click", locateMe);
-
-    // ─── DRAWER ───────────────────────────────────────────────────────────────
-    function showDrawer(p) {
-      document.getElementById("drawer-title").textContent = p.name;
-      document.getElementById("drawer-meta").innerHTML =
-        `<span style="color:${COLORS[p.cat]}">${LABELS[p.cat] || p.cat}</span>`;
-      document.getElementById("drawer-notes").textContent = p.note;
-      document.getElementById("drawer").classList.remove("collapsed");
-    }
-
-    function closeDrawer() {
-      document.getElementById("drawer").classList.add("collapsed");
-    }
-
-    document.getElementById("drawer-close").addEventListener("click", closeDrawer);
-    map.on("click", closeDrawer);
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeDrawer();
-    });
-  </script>
+map.on('click', closeDrawer);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+</script>
 </body>
 </html>
