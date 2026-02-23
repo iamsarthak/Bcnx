@@ -251,6 +251,34 @@
       flex-shrink: 0;
     }
 
+    /* Claude badge */
+    #claude-badge {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(135deg, rgba(63,169,245,0.18), rgba(63,169,245,0.08));
+      border: 1.5px solid #3fa9f5;
+      border-radius: 20px;
+      padding: 4px 10px 4px 7px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #3fa9f5;
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+    }
+    #claude-badge.visible { display: flex; }
+
+    .claude-star {
+      width: 14px; height: 14px;
+      background: #3fa9f5;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px;
+      color: white;
+      flex-shrink: 0;
+    }
+
     #drawer-meta {
       font-size: 0.72rem;
       margin-bottom: 8px;
@@ -355,6 +383,7 @@
       <div class="leg-item"><div class="leg-dot" style="background:var(--cat-cafe)"></div>Café</div>
       <div class="leg-item"><div class="leg-dot" style="background:var(--cat-bar)"></div>Bars</div>
       <div class="leg-item"><div class="leg-dot" style="background:var(--devina)"></div>Devina ✓</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3fa9f5"></div>Claude Pick ★</div>
     </div>
   </div>
 
@@ -366,6 +395,10 @@
         <div id="devina-badge">
           <span class="devina-check">✓</span>
           Devina Approved
+        </div>
+        <div id="claude-badge">
+          <span class="claude-star">★</span>
+          Claude Pick
         </div>
       </div>
       <div id="drawer-meta"></div>
@@ -388,6 +421,7 @@
     const COLORS = { sight: '#e8622a', food: '#4CAF50', cafe: '#c9a84c', bar: '#9b59b6' };
     const LABELS = { sight: '🏛 Sights', food: '🍽 Food', cafe: '☕ Café', bar: '🍹 Bars' };
     const DEVINA_COLOR = '#e91e8c';
+    const CLAUDE_COLOR = '#3fa9f5';
 
     // ── DATA ──────────────────────────────────────────────────────────────────────
     // devina:true = Devina's personal recommendation
@@ -460,16 +494,41 @@
       { cat:'bar', devina:false, name:'Nevermind',                 lat:41.3783, lng:2.1673, emoji:'🎵', note:'Raval area bar/club.' },
       { cat:'bar', devina:false, name:'Bornet',                    lat:41.3854, lng:2.1831, emoji:'🍺', note:'Cozy bar in El Born.' },
       { cat:'bar', devina:false, name:'La Whiskeria',              lat:41.3872, lng:2.1647, emoji:'🥃', note:'Whisky bar. Good selection.' },
+      // ── CLAUDE PICKS ────────────────────────────────────────────────
+
+// SIGHTS
+{ cat:'sight', devina:false, claude:true, name:'Palau de la Música Catalana', lat:41.387204, lng:2.175223, emoji:'🎶', note:"Concert hall masterpiece — stained-glass ceiling is unreal. Book a guided tour or catch a concert." },
+{ cat:'sight', devina:false, claude:true, name:'Picasso Museum (El Born)',    lat:41.385216, lng:2.180893, emoji:'🖼️', note:"Underrated — early Picasso works give amazing context. El Born." },
+{ cat:'sight', devina:false, claude:true, name:'Palau Güell',                 lat:41.37889,  lng:2.17417,  emoji:'🏛️', note:"Gaudí’s first big commission near La Rambla. Rooftop chimneys are wild." },
+{ cat:'sight', devina:false, claude:true, name:'MACBA',                       lat:41.38333,  lng:2.16763,  emoji:'🧱', note:"Contemporary art museum in Raval. Even the plaza outside is iconic." },
+
+// FOOD
+{ cat:'food',  devina:false, claude:true, name:'Quimet & Quimet',             lat:41.3739531,lng:2.1655638,emoji:'🐟', note:"Standing-room tapas legend. Go early." },
+{ cat:'food',  devina:false, claude:true, name:'Bar del Pla',                 lat:41.3856,   lng:2.18002,  emoji:'🍽️', note:"Top tapas pick. Croquetas + anchovies." },
+{ cat:'food',  devina:false, claude:true, name:'El Xampanyet',                lat:41.384521, lng:2.18174,  emoji:'🥂', note:"Iconic cava + pan con tomate." },
+{ cat:'food',  devina:false, claude:true, name:'La Cova Fumada',              lat:41.3792791,lng:2.1892169,emoji:'🥔', note:"Birthplace of the bomba. Cash only." },
+{ cat:'food',  devina:false, claude:true, name:'Cervecería Catalana',         lat:41.3923251,lng:2.1608515,emoji:'🍤', note:"Best no-fuss tapas in Eixample." },
+
+// CAFES
+{ cat:'cafe',  devina:false, claude:true, name:'Federal Café',                lat:41.3769,   lng:2.16289,  emoji:'🥑', note:"OG brunch spot in Sant Antoni." },
+{ cat:'cafe',  devina:false, claude:true, name:"Satan's Coffee Corner",       lat:41.382645, lng:2.175236, emoji:'☕', note:"Tiny serious specialty coffee." },
+
+// BARS
+{ cat:'bar',   devina:false, claude:true, name:'Bar Marsella',                lat:41.3782442,lng:2.1711996,emoji:'🧪', note:"Oldest bar (1820). Absinthe + history." },
+{ cat:'bar',   devina:false, claude:true, name:'Boadas',                      lat:41.3846648,lng:2.1702702,emoji:'🍸', note:"Oldest cocktail bar (1933)." },
+{ cat:'bar',   devina:false, claude:true, name:'Bar Calders',                 lat:41.37648,  lng:2.16239,  emoji:'🍷', note:"Where locals drink midweek." },
     ];
 
     const HOTEL = { lat: 41.3811, lng: 2.1728 };
 
     // ── ICON FACTORY ──────────────────────────────────────────────────────────────
-    function makeIcon(color, emoji, size = 32, devina = false) {
-      // Devina pins get a pink glow ring
+    function makeIcon(color, emoji, size = 32, devina = false, claude = false) {
+      // Devina / Claude pins get special glow rings
       const ring = devina
         ? `box-shadow:0 0 0 3px ${DEVINA_COLOR}, 0 3px 14px rgba(0,0,0,0.55);`
-        : `box-shadow:0 3px 12px rgba(0,0,0,0.5);`;
+        : claude
+          ? `box-shadow:0 0 0 3px ${CLAUDE_COLOR}, 0 3px 14px rgba(0,0,0,0.55);`
+          : `box-shadow:0 3px 12px rgba(0,0,0,0.5);`;
 
       return L.divIcon({
         className: '',
@@ -478,6 +537,11 @@
           ${
             devina
               ? `<div style="position:absolute;top:-5px;right:-5px;transform:rotate(45deg);width:13px;height:13px;border-radius:50%;background:${DEVINA_COLOR};border:1.5px solid #0e0d0c;display:flex;align-items:center;justify-content:center;font-size:7px;color:white;line-height:1;">✓</div>`
+              : ''
+          }
+          ${
+            claude
+              ? `<div style="position:absolute;top:-5px;right:-5px;transform:rotate(45deg);width:13px;height:13px;border-radius:50%;background:${CLAUDE_COLOR};border:1.5px solid #0e0d0c;display:flex;align-items:center;justify-content:center;font-size:8px;color:white;line-height:1;">★</div>`
               : ''
           }
         </div>`,
@@ -514,7 +578,7 @@
       const visible = filter === 'all' ? places : places.filter(p => p.cat === filter);
 
       visible.forEach(p => {
-        const m = L.marker([p.lat, p.lng], { icon: makeIcon(COLORS[p.cat], p.emoji, 32, p.devina) });
+        const m = L.marker([p.lat, p.lng], { icon: makeIcon(COLORS[p.cat], p.emoji, 32, p.devina, p.claude) });
 
         m.bindPopup(
           `<div class="popup-name">${p.name}</div>
@@ -685,6 +749,11 @@
         badge.classList.remove('visible');
       }
 
+      // Show or hide Claude badge
+      const cbadge = document.getElementById('claude-badge');
+      if (p.claude) cbadge.classList.add('visible');
+      else cbadge.classList.remove('visible');
+
       renderActions(p);
       document.getElementById('drawer').classList.remove('collapsed');
     }
@@ -699,6 +768,8 @@
       const badge = document.getElementById('devina-badge');
       if (showDevina) badge.classList.add('visible');
       else badge.classList.remove('visible');
+
+      document.getElementById('claude-badge').classList.remove('visible');
 
       document.getElementById('drawer-actions').innerHTML = '';
       document.getElementById('drawer').classList.remove('collapsed');
